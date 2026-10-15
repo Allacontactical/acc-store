@@ -1,133 +1,143 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#171914">
-  <meta name="description" content="AllaconTactical — одяг, взуття та спорядження для полювання й активного відпочинку.">
-  <title>AllaconTactical — екіпірування для активного життя</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #f4f3ee;
-      color: #20221d;
-      font-family: Arial, sans-serif;
-    }
-    header {
-      background: #171914;
-      color: white;
-      padding: 20px 6%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .logo { font-size: 23px; font-weight: 800; letter-spacing: 1px; }
-    .logo span { color: #e97828; }
-    header a { color: white; text-decoration: none; }
-    .hero {
-      padding: 75px 7%;
-      background: linear-gradient(110deg, #20241c, #444735);
-      color: white;
-    }
-    .hero small {
-      color: #f5a15f;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-    h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.08; max-width: 760px; }
-    .hero p { font-size: 18px; line-height: 1.6; max-width: 600px; color: #e3e3dc; }
-    .button {
-      display: inline-block;
-      background: #e97828;
-      color: #171914;
-      padding: 15px 24px;
-      text-decoration: none;
-      font-weight: bold;
-      border-radius: 4px;
-      margin-top: 14px;
-    }
-    main { max-width: 1100px; margin: auto; padding: 45px 20px; }
-    h2 { font-size: 30px; }
-    .categories {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-    .category {
-      background: white;
-      padding: 24px;
-      border: 1px solid #deded5;
-      border-radius: 6px;
-    }
-    .category h3 { margin-top: 0; }
-    .category p { color: #5d6057; line-height: 1.5; }
-    .note {
-      margin-top: 32px;
-      padding: 24px;
-      background: #e8e6dc;
-      border-radius: 6px;
-      line-height: 1.6;
-    }
-    footer {
-      background: #171914;
-      color: #ddd;
-      padding: 28px 6%;
-      line-height: 1.8;
-    }
-    footer a { color: #f5a15f; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#20251d">
+<meta name="description" content="AllaconTactical — одяг для полювання, тактичне екіпірування, взуття та аксесуари. Каталог товарів онлайн.">
+<title>AllaconTactical — екіпірування для полювання та активного відпочинку</title>
+<style>
+:root{--bg:#171b16;--panel:#23291f;--olive:#3b4930;--orange:#f28c28;--text:#f4f2eb;--muted:#b9bdb2}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.6}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1120px,92%);margin:auto}
+header{background:#20251d;border-bottom:1px solid #394033}
+.nav{min-height:76px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:15px 0}
+.logo{font-size:23px;font-weight:900;letter-spacing:1px}
+.logo span{color:var(--orange)}
+nav{display:flex;gap:18px;flex-wrap:wrap;font-size:14px}
+nav a:hover,.link:hover{color:var(--orange)}
+.hero{padding:76px 0;background:linear-gradient(110deg,#171b16 10%,#283023 100%)}
+.eyebrow{color:var(--orange);font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase}
+h1{font-size:clamp(36px,6vw,62px);line-height:1.08;max-width:760px;margin:16px 0}
+.hero p{color:var(--muted);max-width:600px;font-size:18px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.btn{display:inline-block;padding:13px 20px;border-radius:4px;background:var(--orange);color:#171b16;font-weight:bold}
+.btn.secondary{background:transparent;color:var(--text);border:1px solid #69715f}
+section{padding:58px 0}
+.section-head{margin-bottom:25px}
+h2{font-size:clamp(27px,4vw,38px);line-height:1.2;margin:8px 0}
+.section-head p,.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid #343c2e;border-radius:7px;overflow:hidden}
+.card-body{padding:19px}
+.card h3{margin:0 0 8px;font-size:19px}
+.card p{color:var(--muted);font-size:14px;margin:0 0 16px}
+.link{color:var(--orange);font-weight:bold;font-size:14px}
+.cat-mark{height:130px;background:linear-gradient(135deg,#39442e,#20251d);display:flex;align-items:center;justify-content:center;font-size:43px}
+.products{grid-template-columns:repeat(3,minmax(0,1fr))}
+.product-top{height:135px;background:#2b3325;display:flex;align-items:center;justify-content:center;color:#aeb5a4;font-size:13px}
+.product-top span{border:1px solid #65705a;padding:10px 14px}
+.price-note{font-size:13px;color:var(--muted)}
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.feature{padding:22px;background:#20251d;border-left:3px solid var(--orange)}
+.feature h3{margin:0 0 7px}
+.feature p{margin:0;color:var(--muted);font-size:14px}
+.cta{background:var(--olive);padding:38px;border-radius:8px}
+footer{border-top:1px solid #394033;padding:30px 0;color:var(--muted);font-size:14px}
+.footer-inner{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.products,.features{grid-template-columns:1fr}.hero{padding:52px 0}nav{gap:12px}.cta{padding:24px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.nav{align-items:flex-start}.logo{font-size:20px}}
+</style>
 </head>
 <body>
-  <header>
-    <a class="logo" href="#">ALLACON<span>TACTICAL</span></a>
-    <a href="https://allacontactical.prom.ua/">Наш магазин на Prom.ua ↗</a>
-  </header>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#home">ALLACON<span>TACTICAL</span></a>
+    <nav aria-label="Головна навігація">
+      <a href="#categories">Категорії</a>
+      <a href="#products">Товари</a>
+      <a href="#advantages">Переваги</a>
+      <a href="#contacts">Контакти</a>
+    </nav>
+  </div>
+</header>
 
-  <section class="hero">
-    <small>ALLACONTACTICAL · OUTDOOR EQUIPMENT</small>
+<main>
+<section class="hero" id="home">
+  <div class="wrap">
+    <div class="eyebrow">AllaconTactical · Outdoor equipment</div>
     <h1>Екіпірування, на яке можна розраховувати</h1>
-    <p>Одяг і взуття для полювання, тактичного використання та активного відпочинку. Обирайте спорядження під свої завдання й умови.</p>
-    <a class="button" href="https://allacontactical.prom.ua/">Переглянути товари</a>
-  </section>
-
-  <main>
-    <h2>Обирайте свій напрям</h2>
-    <div class="categories">
-      <article class="category">
-        <h3>Мисливський одяг</h3>
-        <p>Шари одягу, фліс, куртки та штани для різних погодних умов.</p>
-        <a href="https://allacontactical.prom.ua/">Перейти до товарів →</a>
-      </article>
-      <article class="category">
-        <h3>Взуття</h3>
-        <p>Варіанти для прогулянок, природи та складних погодних умов.</p>
-        <a href="https://allacontactical.prom.ua/">Переглянути взуття →</a>
-      </article>
-      <article class="category">
-        <h3>Тактичний одяг</h3>
-        <p>Практичний одяг для активного використання та щоденних завдань.</p>
-        <a href="https://allacontactical.prom.ua/">Переглянути одяг →</a>
-      </article>
-      <article class="category">
-        <h3>Аксесуари</h3>
-        <p>Шапки, рукавиці та інші корисні речі для активного відпочинку.</p>
-        <a href="https://allacontactical.prom.ua/">Обрати аксесуари →</a>
-      </article>
+    <p>Одяг для полювання, тактичне спорядження, взуття та аксесуари для тих, хто обирає практичність і надійність.</p>
+    <div class="actions">
+      <a class="btn" href="https://allacontactical.prom.ua/">Перейти до каталогу</a>
+      <a class="btn secondary" href="#categories">Обрати категорію</a>
     </div>
+  </div>
+</section>
 
-    <div class="note">
-      <strong>Потрібна допомога з вибором?</strong><br>
-      Перегляньте актуальний асортимент у нашому магазині або зв'яжіться з нами через доступні контакти на Prom.ua.
+<section id="categories">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Каталог</div>
+      <h2>Обирайте своє екіпірування</h2>
+      <p>Основні категорії магазину AllaconTactical.</p>
     </div>
-  </main>
+    <div class="grid">
+      <article class="card"><div class="cat-mark">01</div><div class="card-body"><h3>Мисливський одяг</h3><p>Куртки, штани, утеплювальні шари та одяг для різних сезонів.</p><a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a></div></article>
+      <article class="card"><div class="cat-mark">02</div><div class="card-body"><h3>Взуття</h3><p>Черевики та чоботи для полювання й активного відпочинку.</p><a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a></div></article>
+      <article class="card"><div class="cat-mark">03</div><div class="card-body"><h3>Тактичний одяг</h3><p>Практичний одяг для активного використання та outdoor-завдань.</p><a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a></div></article>
+      <article class="card"><div class="cat-mark">04</div><div class="card-body"><h3>Аксесуари</h3><p>Шапки, рукавички та корисні доповнення до екіпірування.</p><a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a></div></article>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    <strong>ALLACONTACTICAL</strong><br>
-    Одяг, взуття та спорядження для активного життя.<br>
-    <a href="https://allacontactical.prom.ua/">Перейти до магазину</a>
-  </footer>
+<section id="products">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Вибір магазину</div>
+      <h2>Товари для вашого спорядження</h2>
+      <p>Переглядайте актуальний асортимент і ціни в каталозі магазину.</p>
+    </div>
+    <div class="grid products">
+      <article class="card"><div class="product-top"><span>HUNTING APPAREL</span></div><div class="card-body"><h3>Одяг для полювання</h3><p>Підбирайте екіпірування з урахуванням сезону та умов полювання.</p><a class="link" href="https://allacontactical.prom.ua/">Дивитися товари →</a></div></article>
+      <article class="card"><div class="product-top"><span>FOOTWEAR</span></div><div class="card-body"><h3>Взуття для outdoor</h3><p>Варіанти для польових умов, лісу та активного відпочинку.</p><a class="link" href="https://allacontactical.prom.ua/">Дивитися товари →</a></div></article>
+      <article class="card"><div class="product-top"><span>GEAR & ACCESSORIES</span></div><div class="card-body"><h3>Аксесуари та спорядження</h3><p>Практичні деталі для комплектування вашого набору.</p><a class="link" href="https://allacontactical.prom.ua/">Дивитися товари →</a></div></article>
+    </div>
+    <p class="price-note">Актуальні ціни, розміри та наявність уточнюйте в каталозі магазину.</p>
+  </div>
+</section>
+
+<section id="advantages">
+  <div class="wrap">
+    <div class="section-head"><div class="eyebrow">AllaconTactical</div><h2>Практичний підхід до екіпірування</h2></div>
+    <div class="features">
+      <div class="feature"><h3>Добірка спорядження</h3><p>Одяг, взуття й аксесуари в одному магазині.</p></div>
+      <div class="feature"><h3>Зрозумілий вибір</h3><p>Переходьте до каталогу та обирайте товари за власними потребами.</p></div>
+      <div class="feature"><h3>Замовлення онлайн</h3><p>Переглядайте деталі товарів і оформлюйте замовлення через магазин.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="contacts">
+  <div class="wrap">
+    <div class="cta">
+      <div class="eyebrow">Ваш наступний крок</div>
+      <h2>Знайдіть екіпірування для своїх умов</h2>
+      <p>Перейдіть до AllaconTactical, щоб переглянути товари, актуальні ціни та доступні розміри.</p>
+      <div class="actions"><a class="btn" href="https://allacontactical.prom.ua/">Відкрити магазин</a></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap footer-inner">
+    <div><strong>ALLACONTACTICAL</strong><br>Екіпірування для полювання та активного відпочинку.</div>
+    <div><a href="https://allacontactical.prom.ua/">Каталог магазину</a><br>© 2026 AllaconTactical</div>
+  </div>
+</footer>
 </body>
 </html>
