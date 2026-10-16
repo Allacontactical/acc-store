@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://allacontactical.github.io/acc-store/sitemap.xml
