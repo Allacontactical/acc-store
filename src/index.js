@@ -25,21 +25,74 @@ export default {
     const chatId = message.chat.id;
     const text = message.text.trim().split("@")[0];
 
+    const catalogKeyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: "🧥 Костюми, куртки та жилети",
+            url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki"
+          }
+        ],
+        [
+          {
+            text: "👖 Штани та нагрудники",
+            url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki"
+          }
+        ],
+        [
+          {
+            text: "🥾 Худі, пуловери та футболки",
+            url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri"
+          }
+        ],
+        [
+          {
+            text: "🧢 Шапки та кепки",
+            url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki"
+          }
+        ]
+      ]
+    };
+
     let reply =
-      "Вітаємо в AllaconTactical! Напишіть, що шукаєте, і ми допоможемо з вибором.";
+      "Вітаємо в AllaconTactical! 🎯\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
+
+    let replyMarkup;
 
     if (text === "/start") {
       reply =
-        "Вітаємо в AllaconTactical! 🎯\n\nДопоможемо підібрати екіпірування для полювання та outdoor.\n\nКоманди:\n/catalog — каталог\n/help — допомога з вибором\n/contact — зв’язатися з нами";
+        "Вітаємо в AllaconTactical! 🎯\n\n" +
+        "Допоможемо підібрати екіпірування для полювання.\n\n" +
+        "Оберіть категорію товарів:";
+
+      replyMarkup = catalogKeyboard;
     } else if (text === "/catalog") {
       reply =
-        "Каталог AllaconTactical:\nhttps://allacontactical.prom.ua/\n\nНапишіть назву товару — допоможемо знайти потрібний варіант.";
+        "Каталог AllaconTactical 🦌\n\n" +
+        "Оберіть потрібну категорію:";
+
+      replyMarkup = catalogKeyboard;
     } else if (text === "/help") {
       reply =
-        "Щоб підібрати екіпірування, напишіть:\n1. Для чого потрібне — полювання, outdoor чи тактика.\n2. Сезон і погодні умови.\n3. Ваш розмір і бюджет.";
+        "Допоможемо підібрати екіпірування! 🎯\n\n" +
+        "Напишіть нам:\n" +
+        "1. Для якого сезону потрібен одяг.\n" +
+        "2. Ваш розмір.\n" +
+        "3. Бажаний бюджет.\n\n" +
+        "Підкажемо, на що звернути увагу під час вибору.";
     } else if (text === "/contact") {
       reply =
-        "Напишіть у цей чат, який товар вас цікавить. Допоможемо уточнити наявність, розмір і термін відправлення.";
+        "Напишіть у цей чат, який товар вас цікавить. 📩\n\n" +
+        "Допоможемо уточнити наявність, розмір і термін відправлення.";
+    }
+
+    const payload = {
+      chat_id: chatId,
+      text: reply
+    };
+
+    if (replyMarkup) {
+      payload.reply_markup = replyMarkup;
     }
 
     const telegramResponse = await fetch(
@@ -47,7 +100,7 @@ export default {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: reply })
+        body: JSON.stringify(payload)
       }
     );
 
