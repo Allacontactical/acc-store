@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -226,6 +227,93 @@
       flex-wrap: wrap;
     }
 
+    /* ACC — premium product cards */
+
+    .products .card {
+      border: 1px solid #3b4434;
+      border-radius: 8px;
+      background: #20251d;
+      transition: transform 0.25s ease, border-color 0.25s ease,
+                  box-shadow 0.25s ease;
+    }
+
+    .products .card:hover {
+      transform: translateY(-4px);
+      border-color: #788365;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    .products .product-image {
+      height: 300px;
+      background: #f4f3ef;
+      border-bottom: 1px solid #3b4434;
+    }
+
+    .products .product-image img {
+      transition: transform 0.35s ease;
+    }
+
+    .products .card:hover .product-image img {
+      transform: scale(1.035);
+    }
+
+    .products .card-body { padding: 22px; }
+
+    .products .card h3 {
+      color: #f4f2eb;
+      font-size: 20px;
+      line-height: 1.35;
+      min-height: 54px;
+      margin-bottom: 12px;
+    }
+
+    .products .card-body > p strong {
+      display: inline-block;
+      color: #f5a044;
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+
+    .products .availability {
+      margin: 0 0 18px;
+      font-size: 12px;
+      color: #c3c8ba;
+    }
+
+    .products .link {
+      display: block;
+      padding: 13px 12px;
+      border: 1px solid var(--orange);
+      border-radius: 4px;
+      background: var(--orange);
+      color: #171b16;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 800;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .products .link:hover {
+      background: transparent;
+      color: #f5a044;
+    }
+
+    /* Telegram buttons */
+
+    .products .telegram-link {
+      margin-top: 10px;
+      background: transparent;
+      border-color: #7cae91;
+      color: #b9e3c8;
+    }
+
+    .products .telegram-link:hover {
+      background: #263d30;
+      color: #ffffff;
+      border-color: #b9e3c8;
+    }
+
     @media (max-width: 760px) {
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .products, .features { grid-template-columns: 1fr; }
@@ -233,6 +321,9 @@
       nav { gap: 12px; }
       .cta { padding: 24px; }
       .product-image { height: 240px; }
+
+      .products .product-image { height: 260px; }
+      .products .card-body { padding: 18px; }
     }
 
     @media (max-width: 420px) {
@@ -240,96 +331,17 @@
       .nav { align-items: flex-start; }
       .logo { font-size: 20px; }
     }
- /* ACC — Premium product cards */
-.products .card {
-  border: 1px solid #3b4434;
-  border-radius: 8px;
-  background: #20251d;
-  transition: transform 0.25s ease, border-color 0.25s ease,
-              box-shadow 0.25s ease;
-}
 
-.products .card:hover {
-  transform: translateY(-4px);
-  border-color: #788365;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
-}
+    @media (prefers-reduced-motion: reduce) {
+      .products .card,
+      .products .product-image img,
+      .products .link {
+        transition: none;
+      }
 
-.products .product-image {
-  height: 300px;
-  background: #f4f3ef;
-  border-bottom: 1px solid #3b4434;
-}
-
-.products .product-image img {
-  transition: transform 0.35s ease;
-}
-
-.products .card:hover .product-image img {
-  transform: scale(1.035);
-}
-
-.products .card-body {
-  padding: 22px;
-}
-
-.products .card h3 {
-  color: #f4f2eb;
-  font-size: 20px;
-  line-height: 1.35;
-  min-height: 54px;
-  margin-bottom: 12px;
-}
-
-.products .card-body > p strong {
-  display: inline-block;
-  color: #f5a044;
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-}
-
-.products .availability {
-  margin: 0 0 18px;
-  font-size: 12px;
-  color: #c3c8ba;
-}
-
-.products .link {
-  display: block;
-  padding: 13px 12px;
-  border: 1px solid #f28c28;
-  border-radius: 4px;
-  background: #f28c28;
-  color: #171b16;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 800;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.products .link:hover {
-  background: transparent;
-  color: #f5a044;
-}
-
-@media (max-width: 760px) {
-  .products .product-image {
-    height: 260px;
-  }
-
-  .products .card-body {
-    padding: 18px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .products .card,
-  .products .product-image img,
-  .products .link {
-    transition: none;
-  }
-} </style>
+      html { scroll-behavior: auto; }
+    }
+  </style>
 </head>
 
 <body>
@@ -415,6 +427,7 @@
         </div>
 
         <div class="grid products">
+          <!-- Product 1 -->
           <article class="card">
             <a href="https://allacontactical.prom.ua/ua/p2806605938-ohotnichya-zimnyaya-kurtka.html" target="_blank" rel="noopener">
               <div class="product-image">
@@ -427,9 +440,11 @@
               <p><strong>17 000 грн</strong></p>
               <div class="availability">Уточнюйте наявність і розміри</div>
               <a class="link" href="https://allacontactical.prom.ua/ua/p2806605938-ohotnichya-zimnyaya-kurtka.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
+              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
             </div>
           </article>
 
+          <!-- Product 2 -->
           <article class="card">
             <a href="https://allacontactical.prom.ua/ua/p2458430644-shapka-drake-waterfowl.html" target="_blank" rel="noopener">
               <div class="product-image">
@@ -442,9 +457,11 @@
               <p><strong>1 170 грн</strong></p>
               <div class="availability">Уточнюйте наявність</div>
               <a class="link" href="https://allacontactical.prom.ua/ua/p2458430644-shapka-drake-waterfowl.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
+              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
             </div>
           </article>
 
+          <!-- Product 3 -->
           <article class="card">
             <a href="https://prom.ua/ua/p2875446129-prodazh-shtanov-sitka.html" target="_blank" rel="noopener">
               <div class="product-image">
@@ -457,9 +474,11 @@
               <p><strong>8 300 грн</strong></p>
               <div class="availability">Уточнюйте наявність і розмір</div>
               <a class="link" href="https://prom.ua/ua/p2875446129-prodazh-shtanov-sitka.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
+              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
             </div>
           </article>
 
+          <!-- Product 4 -->
           <article class="card">
             <a href="https://prom.ua/ua/p2457796278-ohotnichya-toroka-hunting.html" target="_blank" rel="noopener">
               <div class="product-image">
@@ -472,6 +491,7 @@
               <p><strong>1 150 грн</strong></p>
               <div class="availability">Уточнюйте наявність</div>
               <a class="link" href="https://prom.ua/ua/p2457796278-ohotnichya-toroka-hunting.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
+              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
             </div>
           </article>
         </div>
@@ -504,32 +524,29 @@
       </div>
     </section>
 
-   <section id="contacts">
-  <div class="wrap">
-    <div class="cta">
-      <div class="eyebrow">ALLACONTACTICAL</div>
-      <h2>Потрібна допомога з вибором?</h2>
-      <p>Напишіть нам у Telegram або зателефонуйте. Допоможемо уточнити наявність, розмір і доставку.</p>
+    <section id="contacts">
+      <div class="wrap">
+        <div class="cta">
+          <div class="eyebrow">ALLACONTACTICAL</div>
+          <h2>Потрібна допомога з вибором?</h2>
+          <p>Напишіть нам у Telegram або зателефонуйте. Допоможемо уточнити наявність, розмір і доставку.</p>
 
-      <div class="actions">
-        <a class="btn"
-           href="https://t.me/Allacontactical_bot"
-           target="_blank"
-           rel="noopener">
-          Замовити в Telegram
-        </a>
+          <div class="actions">
+            <a class="btn" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">
+              Замовити в Telegram
+            </a>
 
-        <a class="btn secondary" href="tel:+380667412693">
-          Зателефонувати: 066 741 26 93
-        </a>
+            <a class="btn secondary" href="tel:+380667412693">
+              Зателефонувати: 066 741 26 93
+            </a>
 
-        <a class="btn secondary" href="tel:+380967421564">
-          Зателефонувати: 096 742 15 64
-        </a>
+            <a class="btn secondary" href="tel:+380967421564">
+              Зателефонувати: 096 742 15 64
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
   </main>
 
   <footer>
