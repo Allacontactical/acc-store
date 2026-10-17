@@ -314,6 +314,51 @@
       border-color: #b9e3c8;
     }
 
+    .catalog-tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 14px;
+      align-items: center;
+      margin: 0 0 24px;
+      padding: 18px;
+      background: #20251d;
+      border: 1px solid #3b4434;
+      border-radius: 8px;
+    }
+
+    .catalog-search-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .catalog-search, .catalog-select {
+      width: 100%;
+      min-width: 0;
+      padding: 13px 12px;
+      border: 1px solid #69715f;
+      border-radius: 4px;
+      background: #171b16;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .catalog-count {
+      grid-column: 1 / -1;
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .products .card h3 {
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 760px) {
+      .catalog-tools { grid-template-columns: 1fr; }
+      .catalog-count { grid-column: auto; }
+    }
+
     @media (max-width: 760px) {
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .products, .features { grid-template-columns: 1fr; }
@@ -426,76 +471,18 @@
           <p>Перегляньте товари та перейдіть до магазину для оформлення замовлення.</p>
         </div>
 
-        <div class="grid products">
-          <!-- Product 1 -->
-          <article class="card">
-            <a href="https://allacontactical.prom.ua/ua/p2806605938-ohotnichya-zimnyaya-kurtka.html" target="_blank" rel="noopener">
-              <div class="product-image">
-                <img src="Куртка%20Дирхантер%20(20).jpg" alt="Зимова мисливська куртка Deerhunter Excape" loading="lazy">
-              </div>
-            </a>
-            <div class="card-body">
-              <h3>Зимова куртка Deerhunter Excape</h3>
-              <p>Мисливська куртка для холодної погоди.</p>
-              <p><strong>17 000 грн</strong></p>
-              <div class="availability">Уточнюйте наявність і розміри</div>
-              <a class="link" href="https://allacontactical.prom.ua/ua/p2806605938-ohotnichya-zimnyaya-kurtka.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
-              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
-            </div>
-          </article>
-
-          <!-- Product 2 -->
-          <article class="card">
-            <a href="https://allacontactical.prom.ua/ua/p2458430644-shapka-drake-waterfowl.html" target="_blank" rel="noopener">
-              <div class="product-image">
-                <img src="drake-windproof.jpg" alt="Шапка Drake Waterfowl Windproof" loading="lazy">
-              </div>
-            </a>
-            <div class="card-body">
-              <h3>Шапка Drake Waterfowl Windproof</h3>
-              <p>Тепла шапка для холодної та вітряної погоди.</p>
-              <p><strong>1 170 грн</strong></p>
-              <div class="availability">Уточнюйте наявність</div>
-              <a class="link" href="https://allacontactical.prom.ua/ua/p2458430644-shapka-drake-waterfowl.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
-              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
-            </div>
-          </article>
-
-          <!-- Product 3 -->
-          <article class="card">
-            <a href="https://prom.ua/ua/p2875446129-prodazh-shtanov-sitka.html" target="_blank" rel="noopener">
-              <div class="product-image">
-                <img src="sitka-pants.jpg.jpg" alt="Мисливські штани Sitka" loading="lazy">
-              </div>
-            </a>
-            <div class="card-body">
-              <h3>Мисливські штани Sitka</h3>
-              <p>Функціональні мисливські штани для активного використання.</p>
-              <p><strong>8 300 грн</strong></p>
-              <div class="availability">Уточнюйте наявність і розмір</div>
-              <a class="link" href="https://prom.ua/ua/p2875446129-prodazh-shtanov-sitka.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
-              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
-            </div>
-          </article>
-
-          <!-- Product 4 -->
-          <article class="card">
-            <a href="https://prom.ua/ua/p2457796278-ohotnichya-toroka-hunting.html" target="_blank" rel="noopener">
-              <div class="product-image">
-                <img src="Hunting%20strap.jpg" alt="Торока HARD CORE Hunting Strap" loading="lazy">
-              </div>
-            </a>
-            <div class="card-body">
-              <h3>HARD CORE Hunting Strap</h3>
-              <p>Міцна торока для перенесення спорядження. Вісім металевих петель, матеріал 900D і нековзка неопренова основа.</p>
-              <p><strong>1 150 грн</strong></p>
-              <div class="availability">Уточнюйте наявність</div>
-              <a class="link" href="https://prom.ua/ua/p2457796278-ohotnichya-toroka-hunting.html" target="_blank" rel="noopener">Купити на Prom.ua →</a>
-              <a class="link telegram-link" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити в Telegram →</a>
-            </div>
-          </article>
+        <div class="catalog-tools">
+          <label class="catalog-search-label" for="productSearch">Поиск по каталогу</label>
+          <input id="productSearch" class="catalog-search" type="search" placeholder="Введите название товара или бренд..." autocomplete="off">
+          <label class="catalog-search-label" for="categoryFilter">Категория</label>
+          <select id="categoryFilter" class="catalog-select">
+            <option value="">Усі категорії</option>
+          </select>
+          <p id="catalogCount" class="catalog-count" aria-live="polite">Завантажуємо каталог…</p>
         </div>
-
+        <div id="productGrid" class="grid products" aria-live="polite">
+          <p class="muted">Завантажуємо товари…</p>
+        </div>
         <p class="price-note">Актуальні ціни, розміри та наявність уточнюйте в магазині.</p>
       </div>
     </section>
@@ -566,5 +553,129 @@
 </div>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      var grid = document.getElementById("productGrid");
+      var search = document.getElementById("productSearch");
+      var category = document.getElementById("categoryFilter");
+      var count = document.getElementById("catalogCount");
+      var products = [];
+
+      function formatPrice(product) {
+        var price = Number(product.price);
+        if (!isFinite(price)) return "Ціну уточнюйте";
+        return new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 }).format(price) + " грн";
+      }
+
+      function makeCard(product) {
+        var article = document.createElement("article");
+        article.className = "card";
+
+        var imageLink = document.createElement("a");
+        imageLink.href = product.url || "https://allacontactical.prom.ua/";
+        imageLink.target = "_blank";
+        imageLink.rel = "noopener";
+
+        var imageWrap = document.createElement("div");
+        imageWrap.className = "product-image";
+        var img = document.createElement("img");
+        img.src = product.image || "";
+        img.alt = product.title || "Товар AllaconTactical";
+        img.loading = "lazy";
+        img.onerror = function () { imageWrap.style.display = "none"; };
+        imageWrap.appendChild(img);
+        imageLink.appendChild(imageWrap);
+        article.appendChild(imageLink);
+
+        var body = document.createElement("div");
+        body.className = "card-body";
+        var title = document.createElement("h3");
+        title.textContent = product.title || "Товар AllaconTactical";
+        body.appendChild(title);
+
+        var categoryText = document.createElement("p");
+        categoryText.textContent = product.category || "Екіпірування";
+        body.appendChild(categoryText);
+
+        var priceLine = document.createElement("p");
+        var strong = document.createElement("strong");
+        strong.textContent = formatPrice(product);
+        priceLine.appendChild(strong);
+        body.appendChild(priceLine);
+
+        var availability = document.createElement("div");
+        availability.className = "availability";
+        availability.textContent = product.availability || "Уточнюйте актуальну наявність на Prom.ua";
+        body.appendChild(availability);
+
+        var buy = document.createElement("a");
+        buy.className = "link";
+        buy.href = product.url || "https://allacontactical.prom.ua/";
+        buy.target = "_blank";
+        buy.rel = "noopener";
+        buy.textContent = "Переглянути на Prom.ua →";
+        body.appendChild(buy);
+
+        article.appendChild(body);
+        return article;
+      }
+
+      function render() {
+        var query = (search.value || "").toLocaleLowerCase("uk-UA").trim();
+        var selectedCategory = category.value;
+        var filtered = products.filter(function (product) {
+          var text = ((product.title || "") + " " + (product.category || "")).toLocaleLowerCase("uk-UA");
+          return text.indexOf(query) !== -1 && (!selectedCategory || product.category === selectedCategory);
+        });
+
+        grid.textContent = "";
+        if (!filtered.length) {
+          var empty = document.createElement("p");
+          empty.className = "muted";
+          empty.textContent = "За вашим запитом товарів не знайдено. Спробуйте іншу назву або категорію.";
+          grid.appendChild(empty);
+        } else {
+          var fragment = document.createDocumentFragment();
+          filtered.forEach(function (product) { fragment.appendChild(makeCard(product)); });
+          grid.appendChild(fragment);
+        }
+        count.textContent = "Показано товарів: " + filtered.length + " із " + products.length;
+      }
+
+      fetch("./products.json")
+        .then(function (response) {
+          if (!response.ok) throw new Error("Не вдалося завантажити каталог");
+          return response.json();
+        })
+        .then(function (data) {
+          products = Array.isArray(data) ? data : [];
+          var categories = [];
+          products.forEach(function (product) {
+            if (product.category && categories.indexOf(product.category) === -1) categories.push(product.category);
+          });
+          categories.sort(function (a, b) { return a.localeCompare(b, "uk"); });
+          categories.forEach(function (name) {
+            var option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            category.appendChild(option);
+          });
+          render();
+        })
+        .catch(function () {
+          grid.textContent = "";
+          var error = document.createElement("p");
+          error.className = "muted";
+          error.textContent = "Не вдалося завантажити каталог. Оновіть сторінку пізніше або відкрийте магазин на Prom.ua.";
+          grid.appendChild(error);
+          count.textContent = "Каталог тимчасово недоступний";
+        });
+
+      search.addEventListener("input", render);
+      category.addEventListener("change", render);
+    }());
+  </script>
+
 </body>
 </html>
