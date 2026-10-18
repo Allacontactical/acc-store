@@ -158,8 +158,21 @@
     }
 
     .cat-mark {
-      height: 130px;
-      background: linear-gradient(135deg, #39442e, #20251d);
+      height: 180px;
+      overflow: hidden;
+      background: #20251d;
+    }
+
+    .cat-mark img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s ease;
+    }
+
+    .category-grid .card:hover .cat-mark img {
+      transform: scale(1.04);
     }
 
     .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -446,11 +459,11 @@
           <p>Обирайте потрібну категорію, переглядайте товари та читайте рекомендації з підбору екіпірування.</p>
         </div>
         <div class="grid category-grid">
-          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Мисливський одяг</h3><p>Куртки, штани, костюми та одяг для різних сезонів.</p><a class="link" href="./hunting-clothing.html">Відкрити категорію →</a></div></article>
-          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Взуття для полювання</h3><p>Мисливські черевики та взуття для різних типів місцевості.</p><a class="link" href="./hunting-footwear.html">Відкрити категорію →</a></div></article>
-          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Аксесуари для полювання</h3><p>Практичні доповнення до основного мисливського екіпірування.</p><a class="link" href="./hunting-accessories.html">Відкрити категорію →</a></div></article>
-          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Тактичний одяг та спорядження</h3><p>Функціональні речі для активного руху та польових умов.</p><a class="link" href="./tactical-gear.html">Відкрити категорію →</a></div></article>
-          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Одяг та спорядження для риболовлі</h3><p>Екіпірування для перебування біля води та мінливої погоди.</p><a class="link" href="./fishing-gear.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark"><img src="./hunting-clothing.jpg" alt="Мисливський одяг для різних сезонів" loading="lazy"></div><div class="card-body"><h3>Мисливський одяг</h3><p>Куртки, штани, костюми та одяг для різних сезонів.</p><a class="link" href="./hunting-clothing.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark"><img src="./hunting-footwear.jpg" alt="Взуття та черевики для полювання" loading="lazy"></div><div class="card-body"><h3>Взуття для полювання</h3><p>Мисливські черевики та взуття для різних типів місцевості.</p><a class="link" href="./hunting-footwear.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark"><img src="./hunting-accessories.jpg" alt="Аксесуари для полювання" loading="lazy"></div><div class="card-body"><h3>Аксесуари для полювання</h3><p>Практичні доповнення до основного мисливського екіпірування.</p><a class="link" href="./hunting-accessories.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark"><img src="./tactical-gear.jpg" alt="Тактичний одяг та спорядження" loading="lazy"></div><div class="card-body"><h3>Тактичний одяг та спорядження</h3><p>Функціональні речі для активного руху та польових умов.</p><a class="link" href="./tactical-gear.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark"><img src="./fishing-gear.jpg" alt="Одяг та спорядження для риболовлі" loading="lazy"></div><div class="card-body"><h3>Одяг та спорядження для риболовлі</h3><p>Екіпірування для перебування біля води та мінливої погоди.</p><a class="link" href="./fishing-gear.html">Відкрити категорію →</a></div></article>
         </div>
       </div>
     </section>
