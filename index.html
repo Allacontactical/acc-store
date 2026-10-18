@@ -675,7 +675,7 @@
           return response.json();
         })
         .then(function (data) {
-          products = Array.isArray(data) ? data : [];
+          products = Array.isArray(data) ? data.filter(function (product) { return product.category !== "Оптика, прицелы, коллиматоры"; }) : [];
           var categories = [];
           products.forEach(function (product) {
             if (product.category && categories.indexOf(product.category) === -1) categories.push(product.category);
