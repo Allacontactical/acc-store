@@ -129,6 +129,8 @@
       gap: 16px;
     }
 
+    .category-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
     .card {
       background: var(--panel);
       border: 1px solid #343c2e;
@@ -355,7 +357,8 @@
     }
 
     @media (max-width: 760px) {
-      .catalog-tools { grid-template-columns: 1fr; }
+      .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .catalog-tools { grid-template-columns: 1fr;
       .catalog-count { grid-column: auto; }
     }
 
@@ -373,6 +376,7 @@
 
     @media (max-width: 420px) {
       .grid { grid-template-columns: 1fr; }
+      .category-grid { grid-template-columns: 1fr; }
       .nav { align-items: flex-start; }
       .logo { font-size: 20px; }
     }
@@ -420,45 +424,14 @@
         <div class="section-head">
           <div class="eyebrow">Каталог</div>
           <h2>Обери своє екіпірування</h2>
-          <p>Практичні речі для полювання, активного відпочинку та різних погодних умов.</p>
+          <p>Обирайте потрібну категорію, переглядайте товари та читайте рекомендації з підбору екіпірування.</p>
         </div>
-
-        <div class="grid">
-          <article class="card">
-            <div class="cat-mark" aria-hidden="true"></div>
-            <div class="card-body">
-              <h3>Мисливський одяг</h3>
-              <p>Одяг для різних сезонів і погодних умов.</p>
-              <a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a>
-            </div>
-          </article>
-
-          <article class="card">
-            <div class="cat-mark" aria-hidden="true"></div>
-            <div class="card-body">
-              <h3>Взуття</h3>
-              <p>Взуття для полювання та активного відпочинку.</p>
-              <a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a>
-            </div>
-          </article>
-
-          <article class="card">
-            <div class="cat-mark" aria-hidden="true"></div>
-            <div class="card-body">
-              <h3>Тактичний одяг</h3>
-              <p>Функціональне екіпірування для активного використання.</p>
-              <a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a>
-            </div>
-          </article>
-
-          <article class="card">
-            <div class="cat-mark" aria-hidden="true"></div>
-            <div class="card-body">
-              <h3>Аксесуари</h3>
-              <p>Корисні доповнення до вашого спорядження.</p>
-              <a class="link" href="https://allacontactical.prom.ua/">Переглянути →</a>
-            </div>
-          </article>
+        <div class="grid category-grid">
+          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Мисливський одяг</h3><p>Куртки, штани, костюми та одяг для різних сезонів.</p><a class="link" href="./hunting-clothing.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Взуття для полювання</h3><p>Мисливські черевики та взуття для різних типів місцевості.</p><a class="link" href="./hunting-footwear.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Аксесуари для полювання</h3><p>Практичні доповнення до основного мисливського екіпірування.</p><a class="link" href="./hunting-accessories.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Тактичний одяг та спорядження</h3><p>Функціональні речі для активного руху та польових умов.</p><a class="link" href="./tactical-gear.html">Відкрити категорію →</a></div></article>
+          <article class="card"><div class="cat-mark" aria-hidden="true"></div><div class="card-body"><h3>Одяг та спорядження для риболовлі</h3><p>Екіпірування для перебування біля води та мінливої погоди.</p><a class="link" href="./fishing-gear.html">Відкрити категорію →</a></div></article>
         </div>
       </div>
     </section>
