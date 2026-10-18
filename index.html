@@ -175,7 +175,7 @@
       transform: scale(1.04);
     }
 
-    .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .products { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
     .product-image {
       height: 280px;
@@ -377,7 +377,8 @@
 
     @media (max-width: 760px) {
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .products, .features { grid-template-columns: 1fr; }
+      .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .features { grid-template-columns: 1fr; }
       .hero { padding: 52px 0; }
       nav { gap: 12px; }
       .cta { padding: 24px; }
@@ -389,6 +390,7 @@
 
     @media (max-width: 420px) {
       .grid { grid-template-columns: 1fr; }
+      .products { grid-template-columns: 1fr; }
       .category-grid { grid-template-columns: 1fr; }
       .nav { align-items: flex-start; }
       .logo { font-size: 20px; }
@@ -476,19 +478,15 @@
           <p>Перегляньте товари та перейдіть до магазину для оформлення замовлення.</p>
         </div>
 
-        <div class="catalog-tools">
-          <label class="catalog-search-label" for="productSearch">Поиск по каталогу</label>
-          <input id="productSearch" class="catalog-search" type="search" placeholder="Введите название товара или бренд..." autocomplete="off">
-          <label class="catalog-search-label" for="categoryFilter">Категория</label>
-          <select id="categoryFilter" class="catalog-select">
-            <option value="">Усі категорії</option>
-          </select>
-          <p id="catalogCount" class="catalog-count" aria-live="polite">Завантажуємо каталог…</p>
-        </div>
         <div id="productGrid" class="grid products" aria-live="polite">
-          <p class="muted">Завантажуємо товари…</p>
+          <p class="muted">Завантажуємо вітрину…</p>
         </div>
-        <p class="price-note">Актуальні ціни, розміри та наявність уточнюйте в магазині.</p>
+        <p id="catalogCount" class="price-note">Добірка товарів AllaconTactical</p>
+        <div class="actions">
+          <a class="btn" href="#categories">Переглянути товари за категоріями</a>
+          <a class="btn secondary" href="https://allacontactical.prom.ua/" target="_blank" rel="noopener">Увесь каталог на Prom.ua</a>
+        </div>
+        <p class="price-note">Актуальні ціни, розміри та наявність уточнюйте на сторінці товару.</p>
       </div>
     </section>
 
@@ -589,10 +587,12 @@
   <script>
     (function () {
       var grid = document.getElementById("productGrid");
-      var search = document.getElementById("productSearch");
-      var category = document.getElementById("categoryFilter");
       var count = document.getElementById("catalogCount");
-      var products = [];
+      var featuredIds = [
+        "2901739399", "2456282918", "3211784656", "2456822002",
+        "3205199215", "2458430644", "2456259276", "2457796278",
+        "2456327934", "2875446129", "3231781127", "3140736394"
+      ];
 
       function formatPrice(product) {
         var price = Number(product.price);
@@ -660,59 +660,40 @@
         return article;
       }
 
-      function render() {
-        var query = (search.value || "").toLocaleLowerCase("uk-UA").trim();
-        var selectedCategory = category.value;
-        var filtered = products.filter(function (product) {
-          var text = ((product.title || "") + " " + (product.category || "")).toLocaleLowerCase("uk-UA");
-          return text.indexOf(query) !== -1 && (!selectedCategory || product.category === selectedCategory);
-        });
-
-        grid.textContent = "";
-        if (!filtered.length) {
-          var empty = document.createElement("p");
-          empty.className = "muted";
-          empty.textContent = "За вашим запитом товарів не знайдено. Спробуйте іншу назву або категорію.";
-          grid.appendChild(empty);
-        } else {
-          var fragment = document.createDocumentFragment();
-          filtered.forEach(function (product) { fragment.appendChild(makeCard(product)); });
-          grid.appendChild(fragment);
-        }
-        count.textContent = "Показано товарів: " + filtered.length + " із " + products.length;
-      }
-
       fetch("./products.json")
         .then(function (response) {
           if (!response.ok) throw new Error("Не вдалося завантажити каталог");
           return response.json();
         })
         .then(function (data) {
-          products = Array.isArray(data) ? data.filter(function (product) { return product.category !== "Оптика, прицелы, коллиматоры"; }) : [];
-          var categories = [];
-          products.forEach(function (product) {
-            if (product.category && categories.indexOf(product.category) === -1) categories.push(product.category);
-          });
-          categories.sort(function (a, b) { return a.localeCompare(b, "uk"); });
-          categories.forEach(function (name) {
-            var option = document.createElement("option");
-            option.value = name;
-            option.textContent = name;
-            category.appendChild(option);
-          });
-          render();
+          var allProducts = Array.isArray(data) ? data : [];
+          var featured = featuredIds.map(function (id) {
+            return allProducts.find(function (product) { return String(product.id) === id; });
+          }).filter(Boolean);
+
+          grid.textContent = "";
+          if (!featured.length) {
+            var error = document.createElement("p");
+            error.className = "muted";
+            error.textContent = "Не вдалося завантажити вітрину. Перейдіть до повного каталогу магазину.";
+            grid.appendChild(error);
+            count.textContent = "Вітрина тимчасово недоступна";
+            return;
+          }
+
+          var fragment = document.createDocumentFragment();
+          featured.forEach(function (product) { fragment.appendChild(makeCard(product)); });
+          grid.appendChild(fragment);
+          count.textContent = "12 позицій у вітрині · Повний асортимент доступний у категоріях";
         })
         .catch(function () {
           grid.textContent = "";
           var error = document.createElement("p");
           error.className = "muted";
-          error.textContent = "Не вдалося завантажити каталог. Оновіть сторінку пізніше або відкрийте магазин на Prom.ua.";
+          error.textContent = "Не вдалося завантажити вітрину. Відкрийте магазин на Prom.ua.";
           grid.appendChild(error);
-          count.textContent = "Каталог тимчасово недоступний";
+          count.textContent = "Вітрина тимчасово недоступна";
         });
-
-      search.addEventListener("input", render);
-      category.addEventListener("change", render);
     }());
   </script>
 
