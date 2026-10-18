@@ -1,0 +1,230 @@
+{
+  "report_version": 1,
+  "generated_date": "2026-10-18",
+  "source_file": "products.json",
+  "source_sha": "89593f52aef6ebf40bfaf71e1a5d9bf975f17786",
+  "source_product_count": 299,
+  "optics_excluded_count": 20,
+  "draft_catalog_count": 279,
+  "title_changes": 0,
+  "original_file_modified": false,
+  "core_field_missing_count": 0,
+  "duplicate_id_count": 0,
+  "duplicate_titles": [
+    {
+      "title": "Зимові мисливські штани DRAKE Silencer Soft Shell із Agion Active XL®",
+      "count": 3,
+      "products": [
+        {
+          "id": "2456156737",
+          "url": "https://allacontactical.prom.ua/p2456156737-zimovi-mislivski-shtani.html",
+          "price": 4890,
+          "images": 1
+        },
+        {
+          "id": "2456158037",
+          "url": "https://allacontactical.prom.ua/p2456158037-zimovi-mislivski-shtani.html",
+          "price": 4890,
+          "images": 1
+        },
+        {
+          "id": "2456852377",
+          "url": "https://allacontactical.prom.ua/p2456852377-zimovi-mislivski-shtani.html",
+          "price": 4800,
+          "images": 1
+        }
+      ]
+    },
+    {
+      "title": "Мисливський баф - Men's Huntworth Performance Fleece Neck Gaiter",
+      "count": 2,
+      "products": [
+        {
+          "id": "2456812683",
+          "url": "https://allacontactical.prom.ua/p2456812683-mislivskij-baf-mens.html",
+          "price": 1180,
+          "images": 4
+        },
+        {
+          "id": "2478144055",
+          "url": "https://allacontactical.prom.ua/p2478144055-mislivskij-baf-mens.html",
+          "price": 1180,
+          "images": 4
+        }
+      ]
+    },
+    {
+      "title": "Мисливські штани Pointer Chevalite Pants Men 3.0",
+      "count": 2,
+      "products": [
+        {
+          "id": "2847491513",
+          "url": "https://allacontactical.prom.ua/p2847491513-ohotnichya-shtany-pointer.html",
+          "price": 12900,
+          "images": 5
+        },
+        {
+          "id": "2864585915",
+          "url": "https://allacontactical.prom.ua/p2864585915-ohotnichya-shtany-pointer.html",
+          "price": 13500,
+          "images": 5
+        }
+      ]
+    },
+    {
+      "title": "Мисливський пуловер Ducks Unlimited",
+      "count": 2,
+      "products": [
+        {
+          "id": "3231451866",
+          "url": "https://allacontactical.prom.ua/p3231451866-ohotnichij-pulover-ducks.html",
+          "price": 2590,
+          "images": 5
+        },
+        {
+          "id": "3231454777",
+          "url": "https://allacontactical.prom.ua/p3231454777-ohotnichij-pulover-ducks.html",
+          "price": 2590,
+          "images": 5
+        }
+      ]
+    }
+  ],
+  "excluded_optics": [
+    {
+      "id": "3138617130",
+      "title": "Коліматорний приціл Aimpoint AB Comp M4 2 MOA",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138617130-kollimatornyj-pritsel-aimpoint.html"
+    },
+    {
+      "id": "3138627688",
+      "title": "Купити голографічний приціл EOTech EXPS2-0 | Компактний, легкий, для ПНБ",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138627688-kupit-golograficheskij-pritsel.html"
+    },
+    {
+      "id": "3138644032",
+      "title": "Голографічний приціл  EOTech EXPS3-0  Топова модель для роботи в будь-яких умовах",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138644032-golograficheskij-pritsel-eotech.html"
+    },
+    {
+      "id": "3138664699",
+      "title": "Купити голографічний приціл EOTech EXPS3-0 | Топова модель для професіоналів",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138664699-kupit-golograficheskij-pritsel.html"
+    },
+    {
+      "id": "3138692801",
+      "title": "Купити EOTech EXPS3-2 | Голографічний приціл для динамічної стрільби з ПНБ",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138692801-kupit-eotech-exps3.html"
+    },
+    {
+      "id": "3138711776",
+      "title": "Купити EOTech EXPS3-DCR-BB | Голографічний приціл для CQB та динамічної стрільби",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138711776-kupit-eotech-exps3.html"
+    },
+    {
+      "id": "3138725333",
+      "title": "Купити коліматор HOLOSUN AEMS-CORE-X2-GR | Легкий, компактний, із захистом IP67",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138725333-kupit-kollimator-holosun.html"
+    },
+    {
+      "id": "3138746174",
+      "title": "Купити коліматор HOLOSUN AEMS-PRO-X2-GR | 4 сітки, сонячне живлення та захист IP67",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138746174-kupit-kollimator-holosun.html"
+    },
+    {
+      "id": "3138768216",
+      "title": "Купити HOLOSUN AEMS-PRO-X2-RD | Червона мультисітка 2 MOA/65 MOA з сонячним живленням",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138768216-kupit-holosun-aems.html"
+    },
+    {
+      "id": "3138839934",
+      "title": "Далекомір Vortex Diamondback HD 2000 (LRF-DB2000)",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138839934-dalnomer-vortex-diamondback.html"
+    },
+    {
+      "id": "3138842220",
+      "title": "Далекомір Vortex Razor HD 4000 7х25",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138842220-dalnomer-vortex-razor.html"
+    },
+    {
+      "id": "3138849020",
+      "title": "Магніфер (збільшувач)  EOTech G33 3x",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138849020-magnifer-uvelichitel-eotech.html"
+    },
+    {
+      "id": "3138851492",
+      "title": "Магніфер (збільшувач) EOTech G33 tan 3х (G33.STSTan)",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138851492-magnifer-uvelichitel-eotech.html"
+    },
+    {
+      "id": "3138862486",
+      "title": "Магніфер (збільшувач) Holosun HM3XT 3x (титановий корпус)",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138862486-magnifer-uvelichitel-holosun.html"
+    },
+    {
+      "id": "3138868027",
+      "title": "Оптичний приціл Sig Sauer TANGO MSR 1-6X24MM, 30MM, SFP. Сітка MSR BDC6 з підсвічуванням",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138868027-opticheskij-pritsel-sig.html"
+    },
+    {
+      "id": "3138887646",
+      "title": "Тактичний приціл EOTech Vudu 3-9x32 + коліматор EOTech EFLX Mini 3 MOA",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138887646-takticheskij-pritsel-eotech.html"
+    },
+    {
+      "id": "3138939457",
+      "title": "Приціл Trijicon ACOG 4x32 BAC Dual illum Red Chevron .223/5.56 BDC (TA31F)",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3138939457-prizmaticheskij-pritsel-trijicon.html"
+    },
+    {
+      "id": "3139316438",
+      "title": "Тепловізійний приціл LIEMKE SPERBER-1",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3139316438-teplovizionnyj-pritsel-liemke.html"
+    },
+    {
+      "id": "3139341860",
+      "title": "Тепловізійний приціл AGM Varmint LRF TS50-640",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3139341860-teplovizionnyj-pritsel-agm.html"
+    },
+    {
+      "id": "3139342374",
+      "title": "Тепловізійний приціл AGM Rattler TS50-640",
+      "category": "Оптика, прицелы, коллиматоры",
+      "url": "https://allacontactical.prom.ua/p3139342374-teplovizionnyj-pritsel-agm.html"
+    }
+  ],
+  "normalized_category_counts": {
+    "Мисливський одяг": 155,
+    "Аксесуари для полювання": 47,
+    "Взуття для полювання": 19,
+    "Тактичний одяг та спорядження": 56,
+    "Одяг та спорядження для риболовлі": 2
+  },
+  "core_field_missing": [],
+  "notes": [
+    "Draft only; not connected to the live website.",
+    "Original titles, IDs, prices, image URLs and Prom URLs are preserved.",
+    "Descriptions are intentionally blank pending factual bilingual copywriting and review.",
+    "Category mapping is a preliminary rule-based draft and must be reviewed before publishing.",
+    "Optics and sights are excluded from the draft catalog."
+  ]
+}
