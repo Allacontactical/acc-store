@@ -590,6 +590,13 @@
         categoryText.textContent = product.category || "Екіпірування";
         body.appendChild(categoryText);
 
+        if (product.description) {
+          var description = document.createElement("p");
+          description.className = "product-description";
+          description.textContent = product.description;
+          body.appendChild(description);
+        }
+
         var priceLine = document.createElement("p");
         var strong = document.createElement("strong");
         strong.textContent = formatPrice(product);
