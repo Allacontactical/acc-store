@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://allacontactical.github.io/acc-store/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://acc-store-ruddy.vercel.app/</loc></url>
+  <url><loc>https://acc-store-ruddy.vercel.app/hunting-clothing.html</loc></url>
+  <url><loc>https://acc-store-ruddy.vercel.app/hunting-footwear.html</loc></url>
+  <url><loc>https://acc-store-ruddy.vercel.app/hunting-accessories.html</loc></url>
+  <url><loc>https://acc-store-ruddy.vercel.app/tactical-gear.html</loc></url>
+  <url><loc>https://acc-store-ruddy.vercel.app/fishing-gear.html</loc></url>
 </urlset>
