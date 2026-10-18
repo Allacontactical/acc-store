@@ -633,7 +633,10 @@
         if (product.description) {
           var description = document.createElement("p");
           description.className = "product-description";
-          description.textContent = product.description;
+          var descriptionText = product.description;
+          description.textContent = descriptionText.length > 190
+            ? descriptionText.slice(0, 187).trim() + "…"
+            : descriptionText;
           body.appendChild(description);
         }
 
