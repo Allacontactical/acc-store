@@ -53,7 +53,58 @@
       letter-spacing: 1px;
     }
 
+
     .logo span { color: var(--orange); }
+
+    .language-switcher {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px;
+      border: 1px solid #4b5541;
+      border-radius: 6px;
+      background: #171b16;
+    }
+
+    .language-switcher button {
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 7px 9px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .language-switcher button:hover,
+    .language-switcher button:focus-visible {
+      border-color: var(--orange);
+      color: var(--orange);
+      outline: none;
+    }
+
+    .language-switcher button[aria-pressed="true"] {
+      background: var(--orange);
+      color: #171b16;
+    }
+
+    #google_translate_element {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .goog-te-banner-frame,
+    .skiptranslate iframe {
+      display: none !important;
+    }
+
+    body { top: 0 !important; }
 
     nav {
       display: flex;
@@ -459,6 +510,12 @@
         <a href="#advantages">Переваги</a>
         <a href="#contacts">Контакти</a>
       </nav>
+      <div class="language-switcher" role="group" aria-label="Оберіть мову сайту">
+        <button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button>
+        <button type="button" data-language="en" aria-pressed="false" title="English">EN</button>
+        <button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button>
+      </div>
+      <div id="google_translate_element" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -605,6 +662,57 @@
 </div>
     </div>
   </footer>
+
+  <script>
+    (function () {
+      var languageButtons = document.querySelectorAll(".language-switcher [data-language]");
+      var supportedLanguages = ["uk", "en", "ru"];
+
+      function selectedLanguage() {
+        var match = document.cookie.match(/(?:^|;\\s*)googtrans=\\/uk\\/(uk|en|ru)(?:;|$)/);
+        return match ? match[1] : "uk";
+      }
+
+      function updateLanguageButtons(language) {
+        languageButtons.forEach(function (button) {
+          button.setAttribute("aria-pressed", button.getAttribute("data-language") === language ? "true" : "false");
+        });
+      }
+
+      window.googleTranslateElementInit = function () {
+        if (window.google && google.translate) {
+          new google.translate.TranslateElement({
+            pageLanguage: "uk",
+            includedLanguages: "uk,en,ru",
+            autoDisplay: false
+          }, "google_translate_element");
+          updateLanguageButtons(selectedLanguage());
+        }
+      };
+
+      function setSiteLanguage(language) {
+        if (supportedLanguages.indexOf(language) === -1) return;
+        if (language === "uk") {
+          document.cookie = "googtrans=/uk/uk; path=/; max-age=31536000; SameSite=Lax";
+          document.cookie = "googtrans=/uk/uk; path=/; domain=" + location.hostname + "; max-age=31536000; SameSite=Lax";
+        } else {
+          document.cookie = "googtrans=/uk/" + language + "; path=/; max-age=31536000; SameSite=Lax";
+          document.cookie = "googtrans=/uk/" + language + "; path=/; domain=" + location.hostname + "; max-age=31536000; SameSite=Lax";
+        }
+        updateLanguageButtons(language);
+        location.reload();
+      }
+
+      languageButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          setSiteLanguage(button.getAttribute("data-language"));
+        });
+      });
+
+      updateLanguageButtons(selectedLanguage());
+    }());
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
 
   <script>
     (function () {
