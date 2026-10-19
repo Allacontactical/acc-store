@@ -696,8 +696,8 @@
       function setSiteLanguage(language) {
         if (supportedLanguages.indexOf(language) === -1) return;
         if (language === "uk") {
-          document.cookie = "googtrans=/uk/uk; path=/; max-age=31536000; SameSite=Lax";
-          document.cookie = "googtrans=/uk/uk; path=/; domain=" + location.hostname + "; max-age=31536000; SameSite=Lax";
+          document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+          document.cookie = "googtrans=; path=/; domain=" + location.hostname + "; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
         } else {
           document.cookie = "googtrans=/uk/" + language + "; path=/; max-age=31536000; SameSite=Lax";
           document.cookie = "googtrans=/uk/" + language + "; path=/; domain=" + location.hostname + "; max-age=31536000; SameSite=Lax";
