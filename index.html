@@ -775,26 +775,13 @@
           var fullDescription = document.createElement("details");
           fullDescription.className = "product-full-description";
           var fullSummary = document.createElement("summary");
-          fullSummary.textContent = "Повний опис українською";
+          fullSummary.textContent = "Повний опис";
           fullDescription.appendChild(fullSummary);
           var fullText = document.createElement("p");
           fullText.className = "product-full-description-text";
           fullText.textContent = product.description;
           fullDescription.appendChild(fullText);
           body.appendChild(fullDescription);
-
-          if (product.description_ru) {
-            var russianDescription = document.createElement("details");
-            russianDescription.className = "product-full-description";
-            var russianSummary = document.createElement("summary");
-            russianSummary.textContent = "Описание на русском";
-            russianDescription.appendChild(russianSummary);
-            var russianText = document.createElement("p");
-            russianText.className = "product-full-description-text";
-            russianText.textContent = product.description_ru;
-            russianDescription.appendChild(russianText);
-            body.appendChild(russianDescription);
-          }
         }
 
         var priceLine = document.createElement("p");
