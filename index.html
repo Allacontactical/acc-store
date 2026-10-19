@@ -727,6 +727,20 @@
         "2456327934", "2875446129", "3231781127", "3140736394"
       ];
 
+      function currentLanguage() {
+        var match = document.cookie.match(/googtrans=([^;]+)/);
+        if (!match) return "uk";
+        var parts = match[1].split("/");
+        var language = parts[parts.length - 1];
+        return ["uk", "en", "ru"].indexOf(language) !== -1 ? language : "uk";
+      }
+
+      function productDescription(product) {
+        var language = currentLanguage();
+        if (language === "ru" && product.description_ru) return product.description_ru;
+        return product.description || product.description_ru || "";
+      }
+
       function formatPrice(product) {
         var price = Number(product.price);
         if (!isFinite(price)) return "Ціну уточнюйте";
@@ -763,10 +777,10 @@
         categoryText.textContent = product.category || "Екіпірування";
         body.appendChild(categoryText);
 
-        if (product.description) {
+        var descriptionText = productDescription(product);
+        if (descriptionText) {
           var description = document.createElement("p");
           description.className = "product-description";
-          var descriptionText = product.description;
           description.textContent = descriptionText.length > 190
             ? descriptionText.slice(0, 187).trim() + "…"
             : descriptionText;
@@ -779,7 +793,7 @@
           fullDescription.appendChild(fullSummary);
           var fullText = document.createElement("p");
           fullText.className = "product-full-description-text";
-          fullText.textContent = product.description;
+          fullText.textContent = descriptionText;
           fullDescription.appendChild(fullText);
           body.appendChild(fullDescription);
         }
