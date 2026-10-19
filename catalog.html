@@ -59,6 +59,24 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 .catalog-tools{display:grid;grid-template-columns:minmax(200px,2fr) minmax(180px,1fr) minmax(150px,1fr);gap:12px;margin:24px 0;padding:16px;background:var(--panel);border:1px solid #394033;border-radius:8px}.catalog-tools label{display:block;font-size:12px;color:var(--muted);font-weight:bold;margin-bottom:5px}.catalog-tools input,.catalog-tools select{width:100%;min-width:0;padding:12px;border:1px solid #69715f;border-radius:4px;background:#171b16;color:var(--text);font:inherit}.catalog-count{color:var(--muted);font-size:14px;margin:0 0 16px}
 .seo-category-links{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.seo-category-links a{display:inline-block;padding:8px 11px;border:1px solid #46503d;border-radius:4px;color:var(--text);font-size:13px}.seo-category-links a:hover{border-color:var(--orange);color:var(--orange)}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:44px}.card{background:var(--panel);border:1px solid #343c2e;border-radius:7px;overflow:hidden;display:flex;flex-direction:column}.product-image{height:260px;background:#f4f3ef;overflow:hidden;border-bottom:1px solid #3b4434}.product-image img{width:100%;height:100%;object-fit:contain;display:block}.card-body{padding:18px;display:flex;flex-direction:column;flex:1}.card h2{font-size:18px;line-height:1.35;margin:0 0 8px;overflow-wrap:anywhere}.category{font-size:12px;color:var(--orange);margin:0 0 8px}.description{color:var(--muted);font-size:14px;white-space:pre-line;margin:0 0 12px}.full-description{margin:0 0 14px;padding:9px 10px;border:1px solid #46503d;border-radius:5px;font-size:13px}.full-description summary{color:var(--orange);font-weight:bold;cursor:pointer}.full-description p{white-space:pre-line;color:var(--muted);margin:10px 0 0}.price{font-size:23px;color:#f5a044;font-weight:800;margin:0 0 5px}.availability{font-size:12px;color:var(--muted);margin:0 0 14px}.buy{display:block;text-align:center;padding:12px;border:1px solid var(--orange);border-radius:4px;background:var(--orange);color:#171b16;font-weight:800;margin-top:auto}.contact-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.contact-actions a{display:block;text-align:center;padding:10px 6px;border:1px solid #69715f;border-radius:4px;color:var(--text);font-size:13px;font-weight:700}.contact-actions a:hover{border-color:var(--orange);color:var(--orange)}.empty{color:var(--muted);padding:30px 0}footer{border-top:1px solid #394033;padding:26px 0;color:var(--muted);font-size:14px}
+
+.order-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78)}
+.order-modal.is-open{display:flex}
+.order-dialog{width:min(560px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid #69715f;border-radius:8px;padding:22px;box-shadow:0 16px 60px rgba(0,0,0,.45)}
+.order-dialog h2{margin:0 0 8px;font-size:24px}
+.order-dialog p{color:var(--muted);margin:0 0 16px}
+.order-form{display:grid;gap:12px}
+.order-form label{display:block;font-size:13px;color:var(--muted);font-weight:bold}
+.order-form input,.order-form textarea{display:block;width:100%;margin-top:5px;padding:12px;border:1px solid #69715f;border-radius:4px;background:#171b16;color:var(--text);font:inherit}
+.order-form textarea{min-height:84px;resize:vertical}
+.order-form .form-actions{display:flex;gap:10px;flex-wrap:wrap}
+.order-form button{cursor:pointer;font:inherit}
+.order-form .form-status{min-height:24px;margin:0;color:var(--text)}
+.order-form .form-status.error{color:#ffb4a9}
+.order-form .form-status.success{color:#b7e4a8}
+.order-button{width:100%;border:1px solid var(--orange);cursor:pointer;font:inherit}
+.buy-secondary{display:block;text-align:center;padding:10px;border:1px solid #69715f;border-radius:4px;color:var(--text);font-size:13px;font-weight:700;margin-top:8px}
+
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-tools{grid-template-columns:1fr 1fr}.catalog-tools .search-field{grid-column:1/-1}}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.product-image{height:280px}.catalog-tools{grid-template-columns:1fr}.catalog-tools .search-field{grid-column:auto}.nav{align-items:flex-start}}
 </style>
@@ -89,6 +107,23 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 </div></section>
 </main>
 <footer><div class="wrap"><strong>ALLACONTACTICAL</strong><p>Замовлення та консультація: <a href="https://t.me/Allacontactical_bot">Telegram</a> · 066 741 26 93 · 096 742 15 64 · <a href="mailto:Allacontactical@gmail.com">Allacontactical@gmail.com</a></p><a href="./index.html">Повернутися на головну</a></div></footer>
+<div class="order-modal" id="orderModal" aria-hidden="true">
+  <section class="order-dialog" role="dialog" aria-modal="true" aria-labelledby="orderTitle">
+    <button type="button" id="closeOrderModal" class="btn secondary" style="float:right;padding:6px 10px" aria-label="Закрити форму">Закрити ✕</button>
+    <h2 id="orderTitle">Оформити замовлення ACC</h2>
+    <p>Залиште контакти. Ми зв’яжемося з вами, щоб підтвердити наявність, розмір і доставку. Оплата — при отриманні.</p>
+    <form class="order-form" id="accOrderForm">
+      <label>Ім’я *<input name="name" autocomplete="name" required maxlength="100"></label>
+      <label>Телефон *<input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+380…" required maxlength="30"></label>
+      <label>Товар *<input name="product" id="orderProduct" required maxlength="250" readonly></label>
+      <label>Розмір (якщо потрібен)<input name="size" maxlength="80" placeholder="Наприклад, L, XL або 52"></label>
+      <label>Місто / населений пункт *<input name="city" autocomplete="address-level2" required maxlength="120"></label>
+      <label>Коментар<textarea name="comment" maxlength="1000" placeholder="Колір, відділення доставки або питання"></textarea></label>
+      <div class="form-actions"><button class="btn order-button" id="submitOrder" type="submit">Надіслати заявку</button><button class="btn secondary" type="button" id="cancelOrder">Скасувати</button></div>
+      <p class="form-status" id="orderStatus" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+</div>
 <script>
 (function(){
 var buttons=document.querySelectorAll(".language-switcher [data-language]");
@@ -125,11 +160,34 @@ var c=document.createElement("p");c.className="category";c.textContent=p.categor
 var d=desc(p);if(d){var preview=document.createElement("p");preview.className="description";preview.textContent=d.length>240?d.slice(0,237).trim()+"…":d;body.appendChild(preview);if(d.length>240){var details=document.createElement("details");details.className="full-description";var s=document.createElement("summary");s.textContent="Повний опис";details.appendChild(s);var text=document.createElement("p");text.textContent=d;details.appendChild(text);body.appendChild(details);}}
 var pr=document.createElement("p");pr.className="price";pr.textContent=Number.isFinite(price(p))?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price(p))+" грн":"Ціну уточнюйте";body.appendChild(pr);
 var av=document.createElement("p");av.className="availability";av.textContent=p.availability||"Уточнюйте актуальну наявність перед замовленням";body.appendChild(av);
-var buy=document.createElement("a");buy.className="buy";buy.href=p.url||"https://allacontactical.prom.ua/";buy.target="_blank";buy.rel="noopener";buy.textContent="Переглянути товар на Prom.ua →";body.appendChild(buy);
+var buy=document.createElement("button");buy.type="button";buy.className="buy order-button";buy.textContent="Оформити замовлення";buy.setAttribute("data-order-product",p.title||"Товар AllaconTactical");body.appendChild(buy);
+var prom=document.createElement("a");prom.className="buy-secondary";prom.href=p.url||"https://allacontactical.prom.ua/";prom.target="_blank";prom.rel="noopener";prom.textContent="Детальніше на Prom.ua →";body.appendChild(prom);
 var contact=document.createElement("div");contact.className="contact-actions";var tg=document.createElement("a");tg.href="https://t.me/Allacontactical_bot";tg.target="_blank";tg.rel="noopener";tg.textContent="Замовити в Telegram";contact.appendChild(tg);var call=document.createElement("a");call.href="tel:+380667412693";call.textContent="Зателефонувати";contact.appendChild(call);body.appendChild(contact);
 card.appendChild(body);frag.appendChild(card);
 });grid.appendChild(frag);
 }
+
+var orderModal=document.getElementById("orderModal"),orderForm=document.getElementById("accOrderForm"),orderProduct=document.getElementById("orderProduct"),orderStatus=document.getElementById("orderStatus"),submitOrder=document.getElementById("submitOrder");
+var orderApiUrl="https://script.google.com/macros/s/AKfycbzpREyHQTp9WowdGBO7c6_FkoMvve0-WBpGOXDhYDvxT1UQLOVhmMdALMooxN4uaFEuIQ/exec";
+function closeOrder(){orderModal.classList.remove("is-open");orderModal.setAttribute("aria-hidden","true");}
+function openOrder(product){orderForm.reset();orderProduct.value=product||"";orderStatus.textContent="";orderStatus.className="form-status";submitOrder.disabled=false;submitOrder.textContent="Надіслати заявку";orderModal.classList.add("is-open");orderModal.setAttribute("aria-hidden","false");var first=orderForm.querySelector('[name="name"]');if(first)first.focus();}
+grid.addEventListener("click",function(event){var button=event.target.closest("[data-order-product]");if(button)openOrder(button.getAttribute("data-order-product"));});
+document.getElementById("closeOrderModal").addEventListener("click",closeOrder);
+document.getElementById("cancelOrder").addEventListener("click",closeOrder);
+orderModal.addEventListener("click",function(event){if(event.target===orderModal)closeOrder();});
+document.addEventListener("keydown",function(event){if(event.key==="Escape"&&orderModal.classList.contains("is-open"))closeOrder();});
+orderForm.addEventListener("submit",function(event){
+event.preventDefault();
+if(!orderForm.reportValidity())return;
+var formData=new FormData(orderForm),payload={};
+formData.forEach(function(value,key){payload[key]=String(value).trim();});
+if(!payload.name||!payload.phone||!payload.product||!payload.city){orderStatus.textContent="Заповніть усі обов’язкові поля.";orderStatus.className="form-status error";return;}
+submitOrder.disabled=true;submitOrder.textContent="Надсилаємо…";orderStatus.textContent="Надсилаємо заявку…";orderStatus.className="form-status";
+fetch(orderApiUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify(payload)})
+.then(function(){orderStatus.textContent="Заявку надіслано. Ми зв’яжемося з вами для підтвердження замовлення.";orderStatus.className="form-status success";orderForm.reset();submitOrder.textContent="Заявку надіслано";})
+.catch(function(){orderStatus.textContent="Не вдалося надіслати заявку. Спробуйте ще раз або напишіть нам у Telegram.";orderStatus.className="form-status error";submitOrder.disabled=false;submitOrder.textContent="Спробувати ще раз";});
+});
+
 search.addEventListener("input",render);category.addEventListener("change",render);sort.addEventListener("change",render);
 fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog fetch failed");return r.json();}).then(function(data){all=Array.isArray(data)?data:[];var cats=Array.from(new Set(all.map(function(p){return p.category;}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,"uk");});cats.forEach(function(name){var o=document.createElement("option");o.value=name;o.textContent=name;category.appendChild(o);});render();}).catch(function(){grid.textContent="";var e=document.createElement("p");e.className="empty";e.textContent="Не вдалося завантажити каталог. Оновіть сторінку трохи пізніше.";grid.appendChild(e);count.textContent="Каталог тимчасово недоступний";});
 })();
