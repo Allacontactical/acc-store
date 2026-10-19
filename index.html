@@ -669,8 +669,11 @@
       var supportedLanguages = ["uk", "en", "ru"];
 
       function selectedLanguage() {
-        var match = document.cookie.match(/(?:^|;\\s*)googtrans=\\/uk\\/(uk|en|ru)(?:;|$)/);
-        return match ? match[1] : "uk";
+        var match = document.cookie.match(/googtrans=([^;]+)/);
+        if (!match) return "uk";
+        var parts = match[1].split("/");
+        var language = parts[parts.length - 1];
+        return ["uk", "en", "ru"].indexOf(language) !== -1 ? language : "uk";
       }
 
       function updateLanguageButtons(language) {
