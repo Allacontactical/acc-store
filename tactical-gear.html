@@ -15,7 +15,16 @@ section{padding:36px 0}.section-head{margin-bottom:20px}h2{font-size:clamp(24px,
 @media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-tools{grid-template-columns:1fr}.catalog-count{grid-column:auto}.hero{padding:35px 0 28px}nav{gap:12px}.product-image{height:220px}}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.product-image{height:250px}.nav{align-items:flex-start}.logo{font-size:20px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-</style>
+
+.language-switcher{display:flex;align-items:center;gap:5px;padding:4px;border:1px solid #4b5541;border-radius:6px;background:#171b16}
+.language-switcher button{border:1px solid transparent;border-radius:4px;padding:7px 9px;background:transparent;color:#f4f2eb;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.language-switcher button:hover,.language-switcher button:focus-visible{border-color:#f28c28;color:#f28c28;outline:none}
+.language-switcher button[aria-pressed="true"]{background:#f28c28;color:#171b16}
+#google_translate_element{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.goog-te-banner-frame,.skiptranslate iframe{display:none!important}
+body{top:0!important}
+
+  </style>
 
   <link rel="canonical" href="https://acc-store-ruddy.vercel.app/tactical-gear.html">
   <meta property="og:type" content="website">
@@ -36,7 +45,7 @@ section{padding:36px 0}.section-head{margin-bottom:20px}h2{font-size:clamp(24px,
   </script>
 </head>
 <body>
-<header><div class="wrap nav"><a class="logo" href="./index.html">ALLACON<span>TACTICAL</span></a><nav aria-label="Головна навігація"><a href="./index.html#categories">Категорії</a><a href="#products">Товари</a><a href="./index.html#contacts">Контакти</a></nav></div></header>
+<header><div class="wrap nav"><a class="logo" href="./index.html">ALLACON<span>TACTICAL</span></a><nav aria-label="Головна навігація"><a href="./index.html#categories">Категорії</a><a href="#products">Товари</a><a href="./index.html#contacts">Контакти</a></nav><div class="language-switcher" role="group" aria-label="Оберіть мову сайту"><button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button><button type="button" data-language="en" aria-pressed="false" title="English">EN</button><button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button></div></div></header>
 <main>
 <section class="hero"><div class="wrap"><div class="eyebrow">Каталог AllaconTactical</div><h1>Тактичний одяг та спорядження</h1><p>Функціональне екіпірування для активного руху, тренувань і польових умов.</p><a class="btn" href="https://allacontactical.prom.ua/">Увесь каталог магазину</a><a class="btn secondary" href="./index.html#categories">Інші категорії</a></div></section>
 <section><div class="wrap seo-copy"><h2>Тактичний одяг та спорядження в Україні — функціональність у польових умовах</h2>
@@ -69,5 +78,19 @@ fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog");re
 search.addEventListener("input",render);category.addEventListener("change",render)
 }());
 </script>
+
+  <div id="google_translate_element" aria-hidden="true"></div>
+  <script>
+  (function(){
+    var buttons=document.querySelectorAll(".language-switcher [data-language]");
+    function current(){var m=document.cookie.match(/googtrans=([^;]+)/);if(!m)return "uk";var p=m[1].split("/");var l=p[p.length-1];return ["uk","en","ru"].indexOf(l)!==-1?l:"uk";}
+    function update(l){buttons.forEach(function(b){b.setAttribute("aria-pressed",b.getAttribute("data-language")===l?"true":"false");});}
+    window.googleTranslateElementInit=function(){if(window.google&&google.translate){new google.translate.TranslateElement({pageLanguage:"uk",includedLanguages:"uk,en,ru",autoDisplay:false},"google_translate_element");update(current());}};
+    buttons.forEach(function(b){b.addEventListener("click",function(){var l=b.getAttribute("data-language");if(l==="uk"){document.cookie="googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";document.cookie="googtrans=; path=/; domain="+location.hostname+"; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";}else{document.cookie="googtrans=/uk/"+l+"; path=/; max-age=31536000; SameSite=Lax";document.cookie="googtrans=/uk/"+l+"; path=/; domain="+location.hostname+"; max-age=31536000; SameSite=Lax";}update(l);location.reload();});});
+    update(current());
+  }());
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
+
 </body>
 </html>
