@@ -830,7 +830,7 @@
         return article;
       }
 
-      fetch("./products.json")
+      fetch("./products.json?v=20261020")
         .then(function (response) {
           if (!response.ok) throw new Error("Не вдалося завантажити каталог");
           return response.json();
