@@ -282,6 +282,16 @@
       font-size: 14px;
     }
 
+    /* Why ACC — premium positioning block */
+    #why-acc { background: linear-gradient(115deg, #20251d 0%, #2a3324 100%); }
+    .why-acc-panel { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr); gap:28px; align-items:center; padding:clamp(24px,4vw,42px); border:1px solid #46513b; border-left:4px solid var(--orange); border-radius:8px; background:rgba(23,27,22,.55); }
+    .why-acc-panel p { color:var(--muted); }
+    .why-acc-points { display:grid; gap:12px; }
+    .why-acc-point { padding:14px 16px; border:1px solid #3b4434; border-radius:5px; background:#23291f; }
+    .why-acc-point strong { display:block; margin-bottom:4px; color:var(--text); }
+    .why-acc-point span { color:var(--muted); font-size:14px; }
+    @media (max-width:700px) { .why-acc-panel { grid-template-columns:1fr; } }
+
     /* FAQ — transparent availability and ordering policy */
     #faq { background: #1d221b; }
     .faq-intro {
@@ -670,6 +680,28 @@
         <div class="actions">
           <a class="btn" href="./catalog.html">Перейти до каталогу</a>
           <a class="btn secondary" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Запитати в Telegram</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="why-acc">
+      <div class="wrap">
+        <div class="why-acc-panel">
+          <div>
+            <div class="eyebrow">Наш підхід</div>
+            <h2>Чому ми не продаємо дешеве мисливське та тактичне спорядження</h2>
+            <p>У польових умовах слабкі матеріали, ненадійна фурнітура чи невдалий крій можуть швидко дати про себе знати. Дешева покупка іноді обертається повторними витратами — і за ту саму річ доводиться платити двічі.</p>
+            <p>В AllaconTactical ми допомагаємо обирати екіпірування за призначенням, характеристиками та реальними потребами. Висока ціна не гарантує бездоганності, тому важливо розуміти, за що саме ви платите.</p>
+            <div class="actions">
+              <a class="btn" href="./blog.html">Читати нашу позицію</a>
+              <a class="btn secondary" href="./catalog.html">Обрати екіпірування</a>
+            </div>
+          </div>
+          <div class="why-acc-points" aria-label="Принципи AllaconTactical">
+            <div class="why-acc-point"><strong>Вибір під завдання</strong><span>Сезон, умови використання та характеристики мають значення.</span></div>
+            <div class="why-acc-point"><strong>Чесні консультації</strong><span>Допомагаємо розібратися до покупки, без обіцянок, яких не можемо підтвердити.</span></div>
+            <div class="why-acc-point"><strong>Наявність перед оплатою</strong><span>Перевіряємо доступність моделей і розмірів на складах у Європі та США.</span></div>
+          </div>
         </div>
       </div>
     </section>
