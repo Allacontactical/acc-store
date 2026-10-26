@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://allacontactical.github.io/acc-store/sitemap.xml
+Sitemap: https://allacontactical.com.ua/sitemap.xml
