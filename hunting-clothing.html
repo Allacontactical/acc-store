@@ -94,7 +94,6 @@ body{top:0!important}
 <p>В AllaconTactical ви знайдете мисливський одяг і спорядження від відомих виробників для різних сезонів та умов використання.</p>
 <p><strong>Шукаєте, де купити мисливський одяг в Україні?</strong> Перегляньте каталог, порівняйте моделі та оберіть екіпірування відповідно до своїх завдань.</p>
 <p>Маєте запитання щодо товару? Зв’яжіться з нами телефоном, у Telegram або на сайті Allacontactical.prom.ua.</p></div></section>
-<section class="subcategory-strip"><div class="wrap"><h2>Підкатегорії мисливського одягу</h2><p><a class="btn secondary" href="./hunting-headwear.html">Шапки, кепки та бафи →</a></p></div></section>
 <section id="products"><div class="wrap"><div class="section-head"><h2>Товари категорії</h2><p class="muted">Перегляньте доступні моделі та уточнюйте актуальні ціни, розміри й наявність на сторінці товару.</p></div>
 <div class="catalog-tools"><label for="productSearch">Пошук у категорії</label><label for="categoryFilter">Категорія товару</label><input id="productSearch" class="catalog-search" type="search" placeholder="Назва або бренд..." autocomplete="off"><select id="categoryFilter" class="catalog-select"><option value="">Усі підкатегорії</option></select><p id="catalogCount" class="catalog-count" aria-live="polite">Завантажуємо каталог…</p></div>
 <div id="productGrid" class="grid"><p class="muted">Завантажуємо товари…</p></div><p class="muted">Ціни, розміри та актуальну наявність уточнюйте в магазині.</p></div></section>
@@ -104,7 +103,7 @@ body{top:0!important}
 <footer><div class="wrap"><strong>ALLACONTACTICAL</strong><br>Одяг та екіпірування для полювання · <a href="https://allacontactical.prom.ua/">Каталог магазину</a> · © 2026 AllaconTactical</div></footer>
 <script>
 (function(){
-var allowedCategories=["Мисливські штани. Нагрудники.","Мисливські худі, пуловери, футболкі","Мисливські костюми , Куртки та Жилети"];
+var allowedCategories=["Мисливські штани. Нагрудники.","Мисливські худі, пуловери, футболкі","Мисливські костюми , Куртки та Жилети","Мисливські шапки, кепки, бафи."];
 function mappedCategory(p){if(p.category!=="Розпродаж!!!")return p.category;var u=p.url||"";if(u.indexOf("p3024475259-rozprodazh-hart-oakland")!==-1)return "Мисливські костюми , Куртки та Жилети";if(u.indexOf("p3024507052-taktichna-hudi")!==-1)return "Тактичний одяг";if(u.indexOf("p3024524537-vijskovi-taktichni-nakolinniki")!==-1)return "Тактичне спорядження та аксесуари";if(u.indexOf("p3024609676-rozprodazh-cholovichi-utepleni")!==-1)return "Аксесуари для полювання";if(u.indexOf("p3024616283-rozprodazh-taktichni-rukavichki")!==-1)return "Тактичне спорядження та аксесуари";return p.category}
 
 var grid=document.getElementById("productGrid"),search=document.getElementById("productSearch"),category=document.getElementById("categoryFilter"),count=document.getElementById("catalogCount"),products=[];
