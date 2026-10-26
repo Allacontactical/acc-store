@@ -608,7 +608,6 @@
           <article class="card"><div class="cat-mark"><img src="./hunting-clothing.jpg" alt="Мисливський одяг для різних сезонів" loading="lazy"></div><div class="card-body"><h3>Мисливський одяг</h3><p>Куртки, штани, костюми та одяг для різних сезонів.</p><a class="link" href="./hunting-clothing.html">Відкрити категорію →</a></div></article>
           <article class="card"><div class="cat-mark"><img src="./hunting-footwear.jpg" alt="Взуття та черевики для полювання" loading="lazy"></div><div class="card-body"><h3>Взуття для полювання</h3><p>Мисливські черевики та взуття для різних типів місцевості.</p><a class="link" href="./hunting-footwear.html">Відкрити категорію →</a></div></article>
           <article class="card"><div class="cat-mark"><img src="./hunting-accessories.jpg" alt="Аксесуари для полювання" loading="lazy"></div><div class="card-body"><h3>Аксесуари для полювання</h3><p>Практичні доповнення до основного мисливського екіпірування.</p><a class="link" href="./hunting-accessories.html">Відкрити категорію →</a></div></article>
-          <article class="card"><div class="cat-mark"><img src="./hunting-accessories.jpg" alt="Мисливські шапки, кепки та бафи" loading="lazy"></div><div class="card-body"><h3>Шапки, кепки та бафи</h3><p>Головні убори для полювання в різні сезони.</p><a class="link" href="./hunting-headwear.html">Відкрити категорію →</a></div></article>
           <article class="card"><div class="cat-mark"><img src="./tactical-gear.jpg" alt="Тактичний одяг та спорядження" loading="lazy"></div><div class="card-body"><h3>Тактичний одяг та спорядження</h3><p>Функціональні речі для активного руху та польових умов.</p><a class="link" href="./tactical-gear.html">Відкрити категорію →</a></div></article>
           <article class="card"><div class="cat-mark"><img src="./fishing-gear.jpg" alt="Одяг та спорядження для риболовлі" loading="lazy"></div><div class="card-body"><h3>Одяг та спорядження для риболовлі</h3><p>Екіпірування для перебування біля води та мінливої погоди.</p><a class="link" href="./fishing-gear.html">Відкрити категорію →</a></div></article>
         </div>
@@ -885,7 +884,7 @@
         article.className = "card";
 
         var imageLink = document.createElement("a");
-        imageLink.href = product.url || "https://allacontactical.prom.ua/";
+        imageLink.href = "https://t.me/Allacontactical_bot";
         imageLink.target = "_blank";
         imageLink.rel = "noopener";
 
@@ -939,16 +938,24 @@
 
         var availability = document.createElement("div");
         availability.className = "availability";
-        availability.textContent = product.availability || "Уточнюйте актуальну наявність на Prom.ua";
+        availability.textContent = "Уточнюйте актуальну наявність у фахівця ACC";
         body.appendChild(availability);
 
         var buy = document.createElement("a");
         buy.className = "link";
-        buy.href = product.url || "https://allacontactical.prom.ua/";
+        buy.href = "https://t.me/Allacontactical_bot";
         buy.target = "_blank";
         buy.rel = "noopener";
-        buy.textContent = "Переглянути на Prom.ua →";
+        buy.textContent = "Отримати консультацію фахівця";
         body.appendChild(buy);
+
+        var prom = document.createElement("a");
+        prom.className = "link";
+        prom.href = product.url || "https://allacontactical.prom.ua/";
+        prom.target = "_blank";
+        prom.rel = "noopener";
+        prom.textContent = "Також доступно на Prom.ua →";
+        body.appendChild(prom);
 
         article.appendChild(body);
         return article;
