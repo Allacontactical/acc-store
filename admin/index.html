@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ACC — управление каталогом</title>
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark">ACC</span><span>Управление каталогом</span></div>
+    <a href="https://allacontactical.com.ua/" target="_blank" rel="noopener">Открыть сайт ↗</a>
+  </header>
+  <main class="shell">
+    <section id="loginPanel" class="panel login-panel">
+      <p class="eyebrow">ALLACONTACTICAL</p>
+      <h1>Вход в управление</h1>
+      <p class="muted">Закрытая панель управления товарами ACC.</p>
+      <form id="loginForm">
+        <label>Пароль администратора<input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary" type="submit">Войти</button>
+        <p id="loginError" class="error" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="appPanel" hidden>
+      <div class="page-heading">
+        <div><p class="eyebrow">КАТАЛОГ ACC</p><h1>Товары</h1><p class="muted">Добавление, редактирование и фотографии — независимо от Prom.ua.</p></div>
+        <button id="logoutBtn" class="secondary">Выйти</button>
+      </div>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Найти товар по названию или ID">
+        <button id="newProductBtn" class="primary">＋ Добавить товар</button>
+      </div>
+      <div id="notice" class="notice" aria-live="polite"></div>
+      <div class="workspace">
+        <aside class="panel product-list-panel">
+          <div class="list-head"><strong>Каталог</strong><span id="productCount" class="muted"></span></div>
+          <div id="productList" class="product-list"><p class="muted">Загрузка каталога…</p></div>
+        </aside>
+        <section class="panel editor">
+          <div class="editor-head"><div><p class="eyebrow">КАРТОЧКА ТОВАРА</p><h2 id="editorTitle">Новый товар</h2></div><span id="editState" class="state">Черновик</span></div>
+          <form id="productForm">
+            <input id="productId" type="hidden">
+            <div class="form-grid">
+              <label class="wide">Название товара<input id="title" required maxlength="240"></label>
+              <label>Цена, грн<input id="price" type="number" min="0" step="1" required></label>
+              <label>Категория<input id="category" required list="categories" placeholder="Например, Мисливський одяг"><datalist id="categories"></datalist></label>
+              <label>Наличие<select id="availability"><option value="in_stock">В наличии</option><option value="expected">Ожидается</option><option value="out_of_stock">Нет в наличии</option><option value="preorder">Под заказ</option></select></label>
+              <label>Дата поступления (если подтверждена)<input id="arrival" type="date"></label>
+              <label class="wide">Размеры / варианты<input id="variants" placeholder="Например: M, L, XL; цвет — Olive"></label>
+              <label class="wide">Ссылка для перехода с карточки<input id="productUrl" type="url" placeholder="Ссылка на консультацию или страницу товара"></label>
+              <label class="wide">Описание (украинский)<textarea id="description" rows="6"></textarea></label>
+              <label class="wide">Описание (русский)<textarea id="descriptionRu" rows="6"></textarea></label>
+              <label class="wide">SEO Title<input id="seoTitle" maxlength="180"></label>
+              <label class="wide">SEO Description<textarea id="seoDescription" rows="3" maxlength="320"></textarea></label>
+              <label class="wide">SEO ключевые фразы<input id="seoKeywords" placeholder="через запятую"></label>
+            </div>
+            <div class="photo-section">
+              <div><h3>Фотографии товара</h3><p class="muted">Можно выбрать сразу до 10 фото с телефона или компьютера.</p></div>
+              <label class="upload-button">＋ Выбрать фотографии<input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+              <div id="photoPreview" class="photo-grid"></div>
+            </div>
+            <div class="form-actions">
+              <label class="publish-check"><input id="published" type="checkbox"> Опубликовать в каталоге</label>
+              <span class="spacer"></span>
+              <button id="archiveBtn" type="button" class="danger" hidden>Снять с публикации</button>
+              <button type="submit" class="primary">Сохранить товар</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="/admin.js" defer></script>
+</body>
+</html>
