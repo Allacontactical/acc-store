@@ -49,6 +49,10 @@ export default {
  async fetch(request,env){
   const url=new URL(request.url);const path=url.pathname;
   if(path==="/admin"||path==="/admin/")return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
+  if(path==="/api/catalog"&&request.method==="GET"){
+   const rows=await env.DB.prepare("SELECT data FROM products WHERE published=1 ORDER BY updated_at DESC").all();
+   return json((rows.results||[]).map(r=>JSON.parse(r.data)));
+  }
   if(path.startsWith("/api/")){
    if(request.method==="POST"&&path==="/api/login"){
     let body;try{body=await request.json();}catch{return json({error:"Некорректный запрос."},400);}
@@ -82,7 +86,7 @@ export default {
       const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
       const key=crypto.randomUUID()+"."+ext;
       await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType:file.type,cacheControl:"public, max-age=31536000, immutable"}});
-      return json({url:"/media/"+key});
+      return json({url:new URL("/media/"+key,request.url).toString()});
     }
    }catch(error){return json({error:error.message||"Внутренняя ошибка."},400);}
    return json({error:"Маршрут не найден."},404);
@@ -92,10 +96,6 @@ export default {
    if(!object)return new Response("Not found",{status:404});
    const headers=new Headers();object.writeHttpMetadata(headers);headers.set("etag",object.httpEtag);
    return new Response(object.body,{headers});
-  }
-  if(path==="/api/catalog"&&request.method==="GET"){
-   const rows=await env.DB.prepare("SELECT data FROM products WHERE published=1 ORDER BY updated_at DESC").all();
-   return json((rows.results||[]).map(r=>JSON.parse(r.data)));
   }
   return env.ASSETS.fetch(request);
  }
