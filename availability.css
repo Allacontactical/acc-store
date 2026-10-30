@@ -1,0 +1,8 @@
+.availability-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin:0 0 10px;padding:6px 11px;border:1px solid #f28c28;border-radius:4px;color:#f5a044;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.availability-message{margin:0 0 12px;padding:10px 12px;border-left:3px solid #f28c28;background:#2b3025;color:#f4f2eb;font-size:13px;line-height:1.5}
+.availability-action{display:block;margin:0 0 10px;padding:11px 14px;border:1px solid #f28c28;border-radius:4px;background:#f28c28;color:#171b16!important;text-align:center;font-size:14px;font-weight:800;text-decoration:none}
+.availability-action:hover{filter:brightness(1.06)}
+.card[data-availability-status="expected"] .availability-badge{border-color:#f28c28;color:#f5a044}
+.card[data-availability-status="out_of_stock"] .availability-badge{border-color:#9b7869;color:#d6b5a5}
+.card[data-availability-status="preorder"] .availability-badge{border-color:#8c9b78;color:#c5d5b2}
+.card[data-availability-status="in_stock"] .availability-badge{border-color:#8c9b78;color:#c5d5b2}
