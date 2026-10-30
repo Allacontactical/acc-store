@@ -6,3 +6,5 @@
 .card[data-availability-status="out_of_stock"] .availability-badge{border-color:#9b7869;color:#d6b5a5}
 .card[data-availability-status="preorder"] .availability-badge{border-color:#8c9b78;color:#c5d5b2}
 .card[data-availability-status="in_stock"] .availability-badge{border-color:#8c9b78;color:#c5d5b2}
+.expected-filter{display:inline-flex;align-items:center;margin:0 0 16px;padding:10px 13px;border:1px solid #69715f;border-radius:4px;background:#20251d;color:#f4f2eb;font:inherit;font-weight:700;cursor:pointer}
+.expected-filter[aria-pressed=true]{border-color:#f28c28;color:#f5a044}
