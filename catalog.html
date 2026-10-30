@@ -89,6 +89,8 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-tools{grid-template-columns:1fr 1fr}.catalog-tools .search-field{grid-column:1/-1}}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.product-image{height:300px}.catalog-tools{grid-template-columns:1fr}.catalog-tools .search-field{grid-column:auto}.nav{align-items:flex-start}}
 </style>
+  <link rel="stylesheet" href="./availability.css">
+  <script src="./availability.js" defer></script>
 </head>
 <body>
 <header><div class="wrap nav">
@@ -111,6 +113,7 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 <div><label for="category">Категорія</label><select id="category"><option value="">Усі категорії</option></select></div>
 <div><label for="sort">Сортування</label><select id="sort"><option value="default">Як у каталозі</option><option value="price-asc">Спочатку дешевші</option><option value="price-desc">Спочатку дорожчі</option><option value="title">За назвою</option></select></div>
 </div>
+<button type="button" id="expectedOnly" class="expected-filter" aria-pressed="false">Показать товары, которые ожидаются</button>
 <p class="catalog-count" id="count" aria-live="polite">Завантажуємо каталог…</p>
 <div class="grid" id="products"><p class="empty">Завантажуємо товари…</p></div>
 </div></section>
@@ -145,13 +148,13 @@ buttons.forEach(function(b){b.addEventListener("click",function(){var lang=b.get
 <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
 <script>
 (function(){
-var all=[],grid=document.getElementById("products"),search=document.getElementById("search"),category=document.getElementById("category"),sort=document.getElementById("sort"),count=document.getElementById("count");
+var all=[],grid=document.getElementById("products"),search=document.getElementById("search"),category=document.getElementById("category"),sort=document.getElementById("sort"),count=document.getElementById("count"),expectedOnly=document.getElementById("expectedOnly"),showExpected=false;
 function lang(){var m=document.cookie.match(/googtrans=([^;]+)/);if(!m)return "uk";var p=m[1].split("/");return p[p.length-1]||"uk";}
 function desc(p){return lang()==="ru"&&p.description_ru?p.description_ru:(p.description||p.description_ru||"");}
 function price(p){var n=Number(p.price);return Number.isFinite(n)?n:Infinity;}
 function render(){
 var q=search.value.trim().toLocaleLowerCase(),cat=category.value;
-var list=all.filter(function(p){return(!cat||p.category===cat)&&(!q||[p.title,p.category,p.description,p.description_ru].join(" ").toLocaleLowerCase().includes(q));});
+var list=all.filter(function(p){return(!showExpected||p.availability_status==="expected")&&(!cat||p.category===cat)&&(!q||[p.title,p.category,p.description,p.description_ru].join(" ").toLocaleLowerCase().includes(q));});
 if(sort.value==="price-asc")list.sort(function(a,b){return price(a)-price(b);});
 if(sort.value==="price-desc")list.sort(function(a,b){return price(b)-price(a);});
 if(sort.value==="title")list.sort(function(a,b){return(a.title||"").localeCompare(b.title||"","uk");});
@@ -160,7 +163,7 @@ grid.textContent="";
 if(!list.length){var e=document.createElement("p");e.className="empty";e.textContent="За вашим запитом товарів не знайдено. Спробуйте змінити пошук або категорію.";grid.appendChild(e);return;}
 var frag=document.createDocumentFragment();
 list.forEach(function(p){
-var card=document.createElement("article");card.className="card";
+var card=document.createElement("article");card.className="card";card.setAttribute("data-availability-status",p.availability_status||"");card.setAttribute("data-expected-arrival",p.expected_arrival||"");
 var imlink=document.createElement("a");imlink.href=p.url||"https://allacontactical.prom.ua/";imlink.target="_blank";imlink.rel="noopener";
 var imwrap=document.createElement("div");imwrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=p.title||"Товар AllaconTactical";img.loading="lazy";img.onerror=function(){imwrap.style.display="none";};imwrap.appendChild(img);imlink.appendChild(imwrap);card.appendChild(imlink);
 var body=document.createElement("div");body.className="card-body";
@@ -197,7 +200,7 @@ fetch(orderApiUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/pl
 .catch(function(){orderStatus.textContent="Не вдалося надіслати заявку. Спробуйте ще раз або напишіть нам у Telegram.";orderStatus.className="form-status error";submitOrder.disabled=false;submitOrder.textContent="Спробувати ще раз";});
 });
 
-search.addEventListener("input",render);category.addEventListener("change",render);sort.addEventListener("change",render);
+search.addEventListener("input",render);category.addEventListener("change",render);sort.addEventListener("change",render);expectedOnly.addEventListener("click",function(){showExpected=!showExpected;expectedOnly.setAttribute("aria-pressed",showExpected?"true":"false");expectedOnly.textContent=showExpected?"Показать весь каталог":"Показать товары, которые ожидаются";render();});
 fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog fetch failed");return r.json();}).then(function(data){all=Array.isArray(data)?data:[];var cats=Array.from(new Set(all.map(function(p){return p.category;}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,"uk");});cats.forEach(function(name){var o=document.createElement("option");o.value=name;o.textContent=name;category.appendChild(o);});render();}).catch(function(){grid.textContent="";var e=document.createElement("p");e.className="empty";e.textContent="Не вдалося завантажити каталог. Оновіть сторінку трохи пізніше.";grid.appendChild(e);count.textContent="Каталог тимчасово недоступний";});
 })();
 </script>
