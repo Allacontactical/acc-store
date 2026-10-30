@@ -1,5 +1,10 @@
 const encoder = new TextEncoder();
-const json = (data, status=200) => new Response(JSON.stringify(data), {status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+const json = (data, status=200, extra={}) => new Response(JSON.stringify(data), {status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",...extra}});
+const cors = request => {
+  const origin=request.headers.get("Origin")||"";
+  const allowed=["https://allacontactical.com.ua","https://www.allacontactical.com.ua","https://allacontactical.github.io"];
+  return allowed.includes(origin)?{"Access-Control-Allow-Origin":origin,"Vary":"Origin"}:{};
+};
 const bytesToB64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64ToBytes = value => Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((value.length+3)%4)),c=>c.charCodeAt(0));
 async function hmac(secret, value){
@@ -51,13 +56,25 @@ export default {
   if(path==="/admin"||path==="/admin/")return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
   if(path==="/api/catalog"&&request.method==="GET"){
    const rows=await env.DB.prepare("SELECT data FROM products WHERE published=1 ORDER BY updated_at DESC").all();
-   return json((rows.results||[]).map(r=>JSON.parse(r.data)));
+   return json((rows.results||[]).map(r=>JSON.parse(r.data)),200,cors(request));
   }
   if(path.startsWith("/api/")){
    if(request.method==="POST"&&path==="/api/login"){
     let body;try{body=await request.json();}catch{return json({error:"Некорректный запрос."},400);}
     if(!env.ADMIN_PASSWORD||!env.SESSION_SECRET)return json({error:"Панель ещё не настроена."},503);
-    if(!equal(String(body.password||""),env.ADMIN_PASSWORD))return json({error:"Неверный пароль."},401);
+    const ip=request.headers.get("CF-Connecting-IP")||"unknown";
+    const attempt=await env.DB.prepare("SELECT attempts,first_attempt FROM login_attempts WHERE ip=?").bind(ip).first();
+    const now=Date.now();
+    if(attempt&&now-Number(attempt.first_attempt)<900000&&Number(attempt.attempts)>=5)return json({error:"Слишком много попыток. Подождите 15 минут."},429);
+    if(!equal(String(body.password||""),env.ADMIN_PASSWORD)){
+      if(attempt&&now-Number(attempt.first_attempt)<900000){
+        await env.DB.prepare("UPDATE login_attempts SET attempts=attempts+1 WHERE ip=?").bind(ip).run();
+      }else{
+        await env.DB.prepare("INSERT INTO login_attempts (ip,attempts,first_attempt) VALUES (?,1,?) ON CONFLICT(ip) DO UPDATE SET attempts=1,first_attempt=excluded.first_attempt").bind(ip,now).run();
+      }
+      return json({error:"Неверный пароль."},401);
+    }
+    await env.DB.prepare("DELETE FROM login_attempts WHERE ip=?").bind(ip).run();
     return json({token:await makeToken(env)});
    }
    if(!await requireAdmin(request,env))return json({error:"Требуется вход в панель."},401);
