@@ -28,7 +28,10 @@
     setNotice("Загружаю каталог…");
     try {
       products=await api("/api/products");
+      if(products.length===0){await api("/api/bootstrap",{method:"POST"});products=await api("/api/products");}
       $("productCount").textContent=products.length+" товаров";
+      const categories=Array.from(new Set(products.map(p=>p.category).filter(Boolean)));
+      $("categories").replaceChildren(...categories.map(name=>{const option=document.createElement("option");option.value=name;return option;}));
       renderList(); setNotice("Каталог загружен.");
     } catch(error){setNotice(error.message,true);}
   }
