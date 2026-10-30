@@ -54,7 +54,7 @@
   function editProduct(p){
     $("productId").value=p.id||"";$("title").value=p.title||"";$("price").value=p.price??"";
     $("category").value=p.category||"";$("availability").value=p.availability_status||"in_stock";
-    $("arrival").value=p.expected_arrival||"";$("variants").value=p.variants||p.sizes||"";
+    $("arrival").value=p.expected_arrival||"";$("variants").value=p.variants||p.sizes||"";$("productUrl").value=p.url||"";
     $("description").value=p.description||"";$("descriptionRu").value=p.description_ru||"";
     $("seoTitle").value=p.seo_title||"";$("seoDescription").value=p.seo_description||"";$("seoKeywords").value=Array.isArray(p.seo_keywords)?p.seo_keywords.join(", "):(p.seo_keywords||"");
     $("published").checked=p.published!==false;$("editorTitle").textContent="Редактирование товара";$("editState").textContent="ID "+p.id;
@@ -90,7 +90,7 @@
       const product={
         id,title:$("title").value.trim(),price:Number($("price").value),currency:"UAH",category:$("category").value.trim(),
         availability_status:$("availability").value,expected_arrival:$("arrival").value||"",
-        variants:$("variants").value.trim(),description:$("description").value,description_ru:$("descriptionRu").value,
+        variants:$("variants").value.trim(),url:$("productUrl").value.trim()||"https://t.me/Allacontactical_bot",description:$("description").value,description_ru:$("descriptionRu").value,
         seo_title:$("seoTitle").value.trim(),seo_description:$("seoDescription").value.trim(),
         seo_keywords:$("seoKeywords").value.split(",").map(x=>x.trim()).filter(Boolean),
         images:[...currentImages,...uploaded],image:[...currentImages,...uploaded][0]||"",
