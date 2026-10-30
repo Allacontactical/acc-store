@@ -25,6 +25,9 @@
     if (price && price.parentNode) price.parentNode.insertBefore(badge, price);
     else body.insertBefore(badge, body.firstChild);
 
+    var oldAvailability = body.querySelector(".availability");
+    if (oldAvailability) oldAvailability.remove();
+
     var message = document.createElement("p");
     message.className = "availability-message";
     var date = card.getAttribute("data-expected-arrival");
@@ -50,6 +53,13 @@
     Array.prototype.forEach.call(cards, enhanceCard);
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
-  else run();
+  function start() {
+    run();
+    if (window.MutationObserver && document.body) {
+      var observer = new MutationObserver(run);
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 }());
