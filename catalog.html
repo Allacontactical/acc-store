@@ -89,6 +89,8 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-tools{grid-template-columns:1fr 1fr}.catalog-tools .search-field{grid-column:1/-1}}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.product-image{height:300px}.catalog-tools{grid-template-columns:1fr}.catalog-tools .search-field{grid-column:auto}.nav{align-items:flex-start}}
 </style>
+  <link rel="stylesheet" href="./availability.css">
+  <script src="./availability.js" defer></script>
 </head>
 <body>
 <header><div class="wrap nav">
@@ -160,7 +162,7 @@ grid.textContent="";
 if(!list.length){var e=document.createElement("p");e.className="empty";e.textContent="За вашим запитом товарів не знайдено. Спробуйте змінити пошук або категорію.";grid.appendChild(e);return;}
 var frag=document.createDocumentFragment();
 list.forEach(function(p){
-var card=document.createElement("article");card.className="card";
+var card=document.createElement("article");card.className="card";card.setAttribute("data-availability-status",p.availability_status||"");
 var imlink=document.createElement("a");imlink.href=p.url||"https://allacontactical.prom.ua/";imlink.target="_blank";imlink.rel="noopener";
 var imwrap=document.createElement("div");imwrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=p.title||"Товар AllaconTactical";img.loading="lazy";img.onerror=function(){imwrap.style.display="none";};imwrap.appendChild(img);imlink.appendChild(imwrap);card.appendChild(imlink);
 var body=document.createElement("div");body.className="card-body";
