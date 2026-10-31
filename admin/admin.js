@@ -117,8 +117,7 @@
     const base=file.name.replace(/\.[^.]+$/,"")||"photo";
     return new File([blob],base+".webp",{type:"image/webp",lastModified:Date.now()});
   }
-  async function uploadSelected(){
-    const urls=[];
+  async function uploadSelected(urls){
     for(let i=0;i<selectedFiles.length;i++){
       setNotice("Преобразую фото в WebP и загружаю: "+(i+1)+" из "+selectedFiles.length+"…");
       const webp=await convertToWebP(selectedFiles[i]);
@@ -128,10 +127,10 @@
     return urls;
   }
   $("productForm").addEventListener("submit",async event=>{
-    event.preventDefault();const save=$("productForm").querySelector('button[type="submit"]');save.disabled=true;
+    event.preventDefault();const uploaded=[];const save=$("productForm").querySelector('button[type="submit"]');save.disabled=true;
     try{
       if(currentImages.length+selectedFiles.length>MAX_IMAGES)throw new Error("В карточке может быть не более 10 фото.");
-      setNotice("Загружаю фотографии…");const uploaded=await uploadSelected();
+      setNotice("Загружаю фотографии…");await uploadSelected(uploaded);
       const id=$("productId").value||crypto.randomUUID();
       const availabilityStatus=$("availability").value;
       const availabilityLabels={unknown:"Уточнюйте актуальну наявність перед замовленням",in_stock:"В наявності",expected:"Очікується",out_of_stock:"Немає в наявності",preorder:"Під замовлення"};
@@ -152,7 +151,10 @@
       selectedFiles=[];$("photos").value="";
       setNotice("Товар сохранён. Обновляю каталог…");await loadProducts();
       const saved=products.find(p=>String(p.id)===String(id));if(saved)editProduct(saved);
-    }catch(error){setNotice(error.message,true);}finally{save.disabled=false;}
+    }catch(error){
+      if(uploaded.length){await Promise.allSettled(uploaded.map(src=>{const key=src.split("/").pop();return api("/api/media/"+encodeURIComponent(key),{method:"DELETE"});}));}
+      setNotice(error.message,true);
+    }finally{save.disabled=false;}
   });
   $("archiveBtn").addEventListener("click",async()=>{
     const id=$("productId").value;if(!id)return;
