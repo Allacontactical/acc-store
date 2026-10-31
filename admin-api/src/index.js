@@ -111,11 +111,11 @@ export default {
     if(path==="/api/upload"&&request.method==="POST"){
       const form=await request.formData();const file=form.get("file");
       if(!file||typeof file==="string")return json({error:"Файл не найден."},400);
-      if(!["image/jpeg","image/png","image/webp"].includes(file.type))return json({error:"Поддерживаются JPG, PNG и WebP."},415);
+      if(file.type!=="image/webp")return json({error:"Сервер принимает фотографии только в формате WebP. Загрузите фото через панель ACC для автоматического преобразования."},415);
       if(file.size<=0||file.size>8*1024*1024)return json({error:"Размер одного фото должен быть от 1 байта до 8 МБ."},413);
       const head=new Uint8Array(await file.slice(0,12).arrayBuffer());
       if(!validImageSignature(head,file.type))return json({error:"Файл не соответствует заявленному формату изображения."},415);
-      const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
+      const ext="webp";
       const key=crypto.randomUUID()+"."+ext;
       await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType:file.type,cacheControl:"public, max-age=31536000, immutable"}});
       return json({url:new URL("/media/"+key,request.url).toString()});
