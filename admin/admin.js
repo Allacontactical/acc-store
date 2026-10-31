@@ -114,7 +114,7 @@
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.86));
     if(!blob||blob.type!=="image/webp")throw new Error("Браузер не смог преобразовать фото в WebP. Попробуй открыть панель в актуальном Chrome или Supermium.");
     if(blob.size<=0||blob.size>MAX_FILE_BYTES)throw new Error("После преобразования фото должно быть не больше 8 МБ: "+file.name);
-    const base=file.name.replace(/\\.[^.]+$/,"")||"photo";
+    const base=file.name.replace(/\.[^.]+$/,"")||"photo";
     return new File([blob],base+".webp",{type:"image/webp",lastModified:Date.now()});
   }
   async function uploadSelected(){
@@ -135,18 +135,19 @@
       const id=$("productId").value||crypto.randomUUID();
       const availabilityStatus=$("availability").value;
       const availabilityLabels={unknown:"Уточнюйте актуальну наявність перед замовленням",in_stock:"В наявності",expected:"Очікується",out_of_stock:"Немає в наявності",preorder:"Під замовлення"};
+      const existing=products.find(p=>String(p.id)===String(id));
+      const images=[...currentImages,...uploaded];
       const product={
-        id,title:$("title").value.trim(),price:Number($("price").value),currency:"UAH",category:$("category").value.trim(),
+        ...(existing||{}),
+        id,title:$("title").value.trim(),price:Number($("price").value),currency:existing?.currency||"UAH",category:$("category").value.trim(),
         availability_status:availabilityStatus,expected_arrival:$("arrival").value||"",
         variants:$("variants").value.trim(),url:$("productUrl").value.trim(),description:$("description").value,description_ru:$("descriptionRu").value,
         seo_title:$("seoTitle").value.trim(),seo_description:$("seoDescription").value.trim(),
         seo_keywords:$("seoKeywords").value.split(",").map(x=>x.trim()).filter(Boolean),
-        images:[...currentImages,...uploaded],image:[...currentImages,...uploaded][0]||"",
-        availability:availabilityLabels[availabilityStatus]||"Уточнюйте актуальну наявність перед замовленням",
+        images,image:images[0]||"",
+        availability:availabilityStatus==="unknown"&&existing?.availability?existing.availability:(availabilityLabels[availabilityStatus]||"Уточнюйте актуальну наявність перед замовленням"),
         published:$("published").checked
       };
-      const existing=products.find(p=>String(p.id)===String(id));
-      if(existing && existing.availability && availabilityStatus==="unknown") product.availability=existing.availability;
       setNotice("Сохраняю карточку…");await api("/api/products",{method:"POST",body:JSON.stringify(product)});
       selectedFiles=[];$("photos").value="";
       setNotice("Товар сохранён. Обновляю каталог…");await loadProducts();
