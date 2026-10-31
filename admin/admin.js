@@ -106,6 +106,7 @@
     let bitmap;
     try { bitmap=await createImageBitmap(file); }
     catch { throw new Error("Не удалось прочитать изображение: "+file.name); }
+    if(bitmap.width<=0||bitmap.height<=0||bitmap.width*bitmap.height>40000000){bitmap.close?.();throw new Error("Фото слишком большое для безопасной обработки: "+file.name);}
     const canvas=document.createElement("canvas");
     canvas.width=bitmap.width;canvas.height=bitmap.height;
     const context=canvas.getContext("2d");
@@ -127,7 +128,7 @@
     return urls;
   }
   $("productForm").addEventListener("submit",async event=>{
-    event.preventDefault();const uploaded=[];const save=$("productForm").querySelector('button[type="submit"]');save.disabled=true;
+    event.preventDefault();const uploaded=[];let productSaved=false;const save=$("productForm").querySelector('button[type="submit"]');save.disabled=true;
     try{
       if(currentImages.length+selectedFiles.length>MAX_IMAGES)throw new Error("В карточке может быть не более 10 фото.");
       setNotice("Загружаю фотографии…");await uploadSelected(uploaded);
@@ -147,12 +148,12 @@
         availability:availabilityStatus==="unknown"&&existing?.availability?existing.availability:(availabilityLabels[availabilityStatus]||"Уточнюйте актуальну наявність перед замовленням"),
         published:$("published").checked
       };
-      setNotice("Сохраняю карточку…");await api("/api/products",{method:"POST",body:JSON.stringify(product)});
+      setNotice("Сохраняю карточку…");await api("/api/products",{method:"POST",body:JSON.stringify(product)});productSaved=true;
       selectedFiles=[];$("photos").value="";
       setNotice("Товар сохранён. Обновляю каталог…");await loadProducts();
       const saved=products.find(p=>String(p.id)===String(id));if(saved)editProduct(saved);
     }catch(error){
-      if(uploaded.length){await Promise.allSettled(uploaded.map(src=>{const key=src.split("/").pop();return api("/api/media/"+encodeURIComponent(key),{method:"DELETE"});}));}
+      if(uploaded.length&&!productSaved){await Promise.allSettled(uploaded.map(src=>{const key=src.split("/").pop();return api("/api/media/"+encodeURIComponent(key),{method:"DELETE"});}));}
       setNotice(error.message,true);
     }finally{save.disabled=false;}
   });
