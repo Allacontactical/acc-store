@@ -118,6 +118,7 @@
       setNotice("Загружаю фотографии…");const uploaded=await uploadSelected();
       const id=$("productId").value||crypto.randomUUID();
       const availabilityStatus=$("availability").value;
+      const availabilityLabels={unknown:"Уточнюйте актуальну наявність перед замовленням",in_stock:"В наявності",expected:"Очікується",out_of_stock:"Немає в наявності",preorder:"Під замовлення"};
       const product={
         id,title:$("title").value.trim(),price:Number($("price").value),currency:"UAH",category:$("category").value.trim(),
         availability_status:availabilityStatus,expected_arrival:$("arrival").value||"",
@@ -125,10 +126,11 @@
         seo_title:$("seoTitle").value.trim(),seo_description:$("seoDescription").value.trim(),
         seo_keywords:$("seoKeywords").value.split(",").map(x=>x.trim()).filter(Boolean),
         images:[...currentImages,...uploaded],image:[...currentImages,...uploaded][0]||"",
+        availability:availabilityLabels[availabilityStatus]||"Уточнюйте актуальну наявність перед замовленням",
         published:$("published").checked
       };
       const existing=products.find(p=>String(p.id)===String(id));
-      if(existing && existing.availability && !existing.availability_status) product.availability=existing.availability;
+      if(existing && existing.availability && availabilityStatus==="unknown") product.availability=existing.availability;
       setNotice("Сохраняю карточку…");await api("/api/products",{method:"POST",body:JSON.stringify(product)});
       selectedFiles=[];$("photos").value="";
       setNotice("Товар сохранён. Обновляю каталог…");await loadProducts();
