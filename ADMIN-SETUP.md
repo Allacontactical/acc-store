@@ -1,31 +1,42 @@
 # ACC catalog administration — deployment notes
 
-This is a separate Cloudflare Worker project. It does not replace or modify the existing Telegram bot Worker (`allacontactical-bot`).
+The administration panel is a separate Cloudflare Worker named `acc-catalog-api`. It must not replace, modify, or reuse the existing Telegram bot Worker (`allacontactical-bot`) or publish changes to the live static storefront.
+
+## Cloudflare resources already prepared
+- D1 database: `acc-catalog-db`
+- D1 database ID: `506eb009-1462-4ff6-a781-1404e9aecf59`
+- R2 bucket: `acc-product-images`
+- Worker name in `admin-api/wrangler.jsonc`: `acc-catalog-api`
+
+The Wrangler configuration is in `admin-api/wrangler.jsonc`. Deploy using that exact configuration file; do not deploy from the repository root with default settings, and never select `allacontactical-bot`.
 
 ## Included
-- Responsive ACC-style admin interface at `/admin`.
-- Password login; password and signing key are Cloudflare Worker secrets, never stored in Git.
+- Password-protected admin interface at `/admin`.
 - D1 product records and R2 photo storage.
-- Up to 10 images per product, JPG/PNG/WebP, maximum 8 MB per image.
+- Up to 10 images per product. Admin accepts JPG/PNG/WebP and converts every upload to WebP (quality 0.86, original dimensions preserved); converted files are limited to 8 MB. The Worker accepts and stores WebP only and checks the file signature.
 - Draft/published state, edit existing records, and unpublish without deleting.
-- One-time import of the current public `products.json` into D1.
-- Public read-only endpoint `/api/catalog`.
+- One-time import of the current public `products.json`.
+- Public read-only `/api/catalog` endpoint with allowlisted CORS.
+- Login throttling stored in D1.
 
-## Required Cloudflare setup
-1. Create a D1 database named `acc-catalog`.
-2. Create an R2 bucket named `acc-product-media`.
-3. Put the actual D1 database ID into `admin-api/wrangler.jsonc`.
-4. From the `admin-api` folder, apply `schema.sql` to the D1 database.
-5. Set Worker secrets `ADMIN_PASSWORD` and `SESSION_SECRET` (use a long random value for the latter).
-6. Deploy this Worker as `allacontactical-admin`.
-7. Open `https://allacontactical-admin.<your-workers-subdomain>.workers.dev/admin`, sign in, then invoke the one-time import endpoint from an authenticated admin session before enabling the storefront API.
+## Before the first test deployment
+1. Confirm the Cloudflare account still contains the D1 database and R2 bucket listed above.
+2. Apply `admin-api/schema.sql` to the remote D1 database using the Wrangler configuration at `admin-api/wrangler.jsonc`.
+3. Set Worker secrets `ADMIN_PASSWORD` and `SESSION_SECRET`. Use a unique, strong admin password and a long random session secret. Never put either value in GitHub or send it in chat.
+4. Deploy only with `admin-api/wrangler.jsonc`, creating the separate Worker `acc-catalog-api`.
+5. Do not connect the storefront to the new API and do not change its production files during this test phase.
 
-## Important deployment boundary
-The existing public storefront still reads its current static `products.json`. It must not be switched to `/api/catalog` until the Worker is deployed, the D1 import is verified, and the public catalog endpoint returns all existing products. The existing Telegram bot Worker and its configuration must remain untouched.
+## Data compatibility and safety
+- Existing product fields such as `availability`, `image`, `images`, `url`, `description`, and `description_ru` are retained.
+- Legacy availability text is not silently converted to “in stock”. The editor maps only clearly recognizable text; otherwise it displays “Уточнить наличие”.
+- Saving an existing product retains its original `availability` text and stores the selected structured status separately as `availability_status`.
+- Existing storefront continues to read its current static `products.json`. Do not connect it to `/api/catalog` until the Worker is deployed, all imported records are compared, and CRUD/photo tests pass.
+- The first catalog import is intended only for an empty D1 products table. Confirm the source catalog and destination table state before invoking it.
+- Never change or redeploy the Telegram bot Worker as part of this setup.
 
-## Follow-up required before production
-- Configure Cloudflare account resources and secrets.
-- Run the initial import and compare the D1 product count and sample records against the current 281-product catalog.
-- Add the deployed Worker API URL to the storefront configuration and update the catalog loaders only after the import is verified.
-- Test login, expiry, product create/edit/unpublish, multiple image upload, mobile layout, and public image delivery.
-- Add login rate limiting and operational monitoring before broad production use.
+## Verification before any production integration
+- Confirm the imported row count matches the source catalog at the time of import; do not rely on a hard-coded historical count.
+- Compare a sample of existing products, including IDs, prices, Prom links, availability text, descriptions, and image arrays.
+- Test admin login, token expiry, failed-login throttling, create/edit/unpublish, ten-photo limit, JPG/PNG/WebP-to-WebP conversion, rejection of non-WebP direct uploads, post-conversion size checks, and mobile layout.
+- Test public catalog CORS and R2 media delivery.
+- Connect the storefront only after successful verification and explicit approval.
