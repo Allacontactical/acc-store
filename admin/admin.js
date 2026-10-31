@@ -103,10 +103,27 @@
     const box=document.createElement("div");box.className="photo";const img=document.createElement("img");img.src=src;img.alt="Фото товара";
     const btn=document.createElement("button");btn.type="button";btn.textContent="×";btn.title="Убрать фото";btn.addEventListener("click",remove);box.append(img,btn);$("photoPreview").append(box);
   }
+  async function convertToWebP(file){
+    let bitmap;
+    try { bitmap=await createImageBitmap(file); }
+    catch { throw new Error("Не удалось прочитать изображение: "+file.name); }
+    const canvas=document.createElement("canvas");
+    canvas.width=bitmap.width;canvas.height=bitmap.height;
+    const context=canvas.getContext("2d");
+    if(!context){bitmap.close?.();throw new Error("Браузер не поддерживает обработку фотографий.");}
+    context.drawImage(bitmap,0,0);bitmap.close?.();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",0.86));
+    if(!blob||blob.type!=="image/webp")throw new Error("Браузер не смог преобразовать фото в WebP. Попробуй открыть панель в актуальном Chrome или Supermium.");
+    if(blob.size<=0||blob.size>MAX_FILE_BYTES)throw new Error("После преобразования фото должно быть не больше 8 МБ: "+file.name);
+    const base=file.name.replace(/\\.[^.]+$/,"")||"photo";
+    return new File([blob],base+".webp",{type:"image/webp",lastModified:Date.now()});
+  }
   async function uploadSelected(){
     const urls=[];
-    for(const file of selectedFiles){
-      const form=new FormData();form.append("file",file,file.name);
+    for(let i=0;i<selectedFiles.length;i++){
+      setNotice("Преобразую фото в WebP и загружаю: "+(i+1)+" из "+selectedFiles.length+"…");
+      const webp=await convertToWebP(selectedFiles[i]);
+      const form=new FormData();form.append("file",webp,webp.name);
       const result=await api("/api/upload",{method:"POST",body:form});urls.push(result.url);
     }
     return urls;
