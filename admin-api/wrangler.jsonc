@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "allacontactical-admin",
+  "name": "acc-catalog-api",
   "main": "src/index.js",
   "compatibility_date": "2026-10-30",
   "workers_dev": true,
@@ -12,14 +12,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "acc-catalog",
-      "database_id": "REPLACE_AFTER_CREATING_D1"
+      "database_name": "acc-catalog-db",
+      "database_id": "506eb009-1462-4ff6-a781-1404e9aecf59"
     }
   ],
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "acc-product-media"
+      "bucket_name": "acc-product-images"
     }
   ],
   "vars": {

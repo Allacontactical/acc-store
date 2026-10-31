@@ -1,9 +1,12 @@
 const encoder = new TextEncoder();
+const MAX_JSON_BYTES = 256 * 1024;
+const MAX_PRODUCT_TEXT = 12000;
+class ValidationError extends Error {}
 const json = (data, status=200, extra={}) => new Response(JSON.stringify(data), {status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",...extra}});
+const allowedOrigins = ["https://allacontactical.com.ua","https://www.allacontactical.com.ua","https://allacontactical.github.io"];
 const cors = request => {
   const origin=request.headers.get("Origin")||"";
-  const allowed=["https://allacontactical.com.ua","https://www.allacontactical.com.ua","https://allacontactical.github.io"];
-  return allowed.includes(origin)?{"Access-Control-Allow-Origin":origin,"Vary":"Origin"}:{};
+  return allowedOrigins.includes(origin)?{"Access-Control-Allow-Origin":origin,"Vary":"Origin"}:{};
 };
 const bytesToB64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64ToBytes = value => Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((value.length+3)%4)),c=>c.charCodeAt(0));
@@ -23,22 +26,63 @@ async function authorized(request,env){
   try{
     const payload=new TextDecoder().decode(b64ToBytes(parts[0]));
     const [expiry]=payload.split(".");
-    if(Number(expiry)<Date.now())return false;
-    const expected=await hmac(env.SESSION_SECRET,payload);
+    if(!/^\d+$/.test(expiry)||Number(expiry)<Date.now())return false;
     const supplied=b64ToBytes(parts[1]);
+    const expected=await hmac(env.SESSION_SECRET,payload);
     if(expected.length!==supplied.length)return false;
-    return crypto.subtle.verify("HMAC",await crypto.subtle.importKey("raw",encoder.encode(env.SESSION_SECRET),{name:"HMAC",hash:"SHA-256"},false,["verify"]),supplied,encoder.encode(payload));
+    let diff=0;for(let i=0;i<expected.length;i++)diff|=expected[i]^supplied[i];
+    return diff===0;
   }catch{return false;}
 }
-async function requireAdmin(request,env){return authorized(request,env);}
+function boundedText(value, name, max=MAX_PRODUCT_TEXT){
+  const result=String(value??"");
+  if(result.length>max)throw new ValidationError("Поле «"+name+"» превышает допустимую длину.");
+  return result;
+}
+async function readJson(request, maxBytes=MAX_JSON_BYTES){
+  const declared=Number(request.headers.get("Content-Length")||0);
+  if(declared>maxBytes)throw new ValidationError("Слишком большой запрос.");
+  if(!request.body)throw new ValidationError("Пустой запрос.");
+  const reader=request.body.getReader();
+  const chunks=[];let total=0;
+  try{
+    while(true){
+      const part=await reader.read();
+      if(part.done)break;
+      total+=part.value.byteLength;
+      if(total>maxBytes){await reader.cancel();throw new ValidationError("Слишком большой запрос.");}
+      chunks.push(part.value);
+    }
+  }finally{reader.releaseLock();}
+  const bytes=new Uint8Array(total);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  try{return JSON.parse(new TextDecoder().decode(bytes));}
+  catch(error){if(error instanceof ValidationError)throw error;throw new ValidationError("Некорректный JSON.");}
+}
 function cleanProduct(p){
-  const id=String(p.id||crypto.randomUUID());
-  const title=String(p.title||"").trim();
+  if(!p||typeof p!=="object"||Array.isArray(p))throw new ValidationError("Некорректная карточка товара.");
+  const id=boundedText(p.id||crypto.randomUUID(),"ID",100).trim();
+  const title=boundedText(p.title,"Название",240).trim();
   const price=Number(p.price);
-  const category=String(p.category||"").trim();
-  if(!title||!category||!Number.isFinite(price)||price<0)throw new Error("Проверь название, категорию и цену.");
-  const images=Array.isArray(p.images)?p.images.filter(x=>typeof x==="string").slice(0,10):[];
-  return {...p,id,title,price,category,images,image:images[0]||String(p.image||""),currency:"UAH",updated_at:new Date().toISOString()};
+  const category=boundedText(p.category,"Категория",160).trim();
+  if(!id||!title||!category||!Number.isFinite(price)||price<0||price>100000000)throw new ValidationError("Проверь название, категорию и цену.");
+  if(p.images!==undefined&&!Array.isArray(p.images))throw new ValidationError("Список фотографий имеет неверный формат.");
+  const rawImages=Array.isArray(p.images)?p.images:[];
+  if(rawImages.length>10)throw new ValidationError("В карточке может быть не более 10 фото.");
+  const images=rawImages.map((x)=> {
+    if(typeof x!=="string"||x.length>2048||!/^https:\/\//i.test(x))throw new ValidationError("Ссылка на фотографию должна быть HTTPS.");
+    return x;
+  });
+  const product={...p,id,title,price,category,images,image:images[0]||"",currency:"UAH",updated_at:new Date().toISOString()};
+  for(const key of ["description","description_ru","seo_title","seo_description","variants","expected_arrival","url"]){
+    if(product[key]!==undefined)product[key]=boundedText(product[key],key,key==="description"||key==="description_ru"?MAX_PRODUCT_TEXT:2000);
+  }
+  if(product.url){let parsed;try{parsed=new URL(product.url);}catch{}if(!parsed||!["http:","https:"].includes(parsed.protocol))throw new ValidationError("Ссылка товара должна начинаться с https:// или http://");}
+  if(product.seo_keywords!==undefined){
+    if(!Array.isArray(product.seo_keywords)||product.seo_keywords.length>50||product.seo_keywords.some(x=>typeof x!=="string"||x.length>100))throw new ValidationError("Проверь SEO-ключевые фразы.");
+  }
+  if(encoder.encode(JSON.stringify(product)).byteLength>MAX_JSON_BYTES)throw new ValidationError("Карточка товара слишком большая.");
+  return product;
 }
 async function bootstrap(env){
   const existing=await env.DB.prepare("SELECT COUNT(*) AS n FROM products").first();
@@ -48,15 +92,27 @@ async function bootstrap(env){
   const products=await response.json();if(!Array.isArray(products))throw new Error("Исходный каталог имеет неверный формат.");
   const statements=products.map(p=>env.DB.prepare("INSERT OR IGNORE INTO products (id,data,published,updated_at) VALUES (?,?,?,?)").bind(String(p.id),JSON.stringify(p),1,new Date().toISOString()));
   for(let i=0;i<statements.length;i+=50)await env.DB.batch(statements.slice(i,i+50));
-  return {imported:products.length};
+  const check=await env.DB.prepare("SELECT COUNT(*) AS n FROM products").first();
+  return {imported:Number(check?.n||0),source_count:products.length};
+}
+function validImageSignature(bytes,type){
+  if(type==="image/jpeg")return bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff;
+  if(type==="image/png")return bytes.length>=8&&[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v);
+  if(type==="image/webp")return bytes.length>=12&&String.fromCharCode(...bytes.slice(0,4))==="RIFF"&&String.fromCharCode(...bytes.slice(8,12))==="WEBP";
+  return false;
 }
 export default {
  async fetch(request,env){
   const url=new URL(request.url);const path=url.pathname;
-  if(path==="/admin"||path==="/admin/")return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
+  if((path==="/admin"||path==="/admin/")&&request.method==="GET")return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
+  if(path==="/api/catalog"&&request.method==="OPTIONS"){
+    const headers=cors(request);
+    if(!headers["Access-Control-Allow-Origin"])return new Response(null,{status:403});
+    return new Response(null,{status:204,headers:{...headers,"Access-Control-Allow-Methods":"GET, OPTIONS","Access-Control-Max-Age":"86400"}});
+  }
   if(path==="/api/catalog"&&request.method==="GET"){
-   const rows=await env.DB.prepare("SELECT data FROM products WHERE published=1 ORDER BY updated_at DESC").all();
-   return json((rows.results||[]).map(r=>JSON.parse(r.data)),200,cors(request));
+    const rows=await env.DB.prepare("SELECT data FROM products WHERE published=1 ORDER BY updated_at DESC").all();
+    return json((rows.results||[]).map(r=>JSON.parse(r.data)),200,cors(request));
   }
   if(path.startsWith("/api/")){
    if(request.method==="POST"&&path==="/api/login"){
@@ -77,7 +133,7 @@ export default {
     await env.DB.prepare("DELETE FROM login_attempts WHERE ip=?").bind(ip).run();
     return json({token:await makeToken(env)});
    }
-   if(!await requireAdmin(request,env))return json({error:"Требуется вход в панель."},401);
+   if(!await authorized(request,env))return json({error:"Требуется вход в панель."},401);
    try{
     if(path==="/api/bootstrap"&&request.method==="POST")return json(await bootstrap(env));
     if(path==="/api/products"&&request.method==="GET"){
@@ -85,7 +141,7 @@ export default {
       return json((rows.results||[]).map(r=>({...JSON.parse(r.data),published:!!r.published})));
     }
     if(path==="/api/products"&&request.method==="POST"){
-      const p=cleanProduct(await request.json());
+      const p=cleanProduct(await readJson(request));
       await env.DB.prepare("INSERT INTO products (id,data,published,updated_at) VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,published=excluded.published,updated_at=excluded.updated_at")
        .bind(p.id,JSON.stringify(p),p.published===false?0:1,p.updated_at).run();
       return json({ok:true,id:p.id});
@@ -95,21 +151,31 @@ export default {
       await env.DB.prepare("UPDATE products SET published=0,updated_at=? WHERE id=?").bind(new Date().toISOString(),decodeURIComponent(match[1])).run();
       return json({ok:true});
     }
+    const mediaDelete=path.match(/^\/api\/media\/([0-9a-f-]{36}\.webp)$/i);
+    if(mediaDelete&&request.method==="DELETE"){
+      await env.MEDIA.delete(mediaDelete[1]);
+      return json({ok:true});
+    }
     if(path==="/api/upload"&&request.method==="POST"){
+      if(Number(request.headers.get("Content-Length")||0)>9*1024*1024)return json({error:"Размер запроса превышает допустимый предел."},413);
       const form=await request.formData();const file=form.get("file");
       if(!file||typeof file==="string")return json({error:"Файл не найден."},400);
-      if(!["image/jpeg","image/png","image/webp"].includes(file.type))return json({error:"Поддерживаются JPG, PNG и WebP."},415);
-      if(file.size>8*1024*1024)return json({error:"Размер одного фото не должен превышать 8 МБ."},413);
-      const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
+      if(file.type!=="image/webp")return json({error:"Сервер принимает фотографии только в формате WebP. Загрузите фото через панель ACC для автоматического преобразования."},415);
+      if(file.size<=0||file.size>8*1024*1024)return json({error:"Размер одного фото должен быть от 1 байта до 8 МБ."},413);
+      const head=new Uint8Array(await file.slice(0,12).arrayBuffer());
+      if(!validImageSignature(head,file.type))return json({error:"Файл не соответствует заявленному формату изображения."},415);
+      const ext="webp";
       const key=crypto.randomUUID()+"."+ext;
       await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType:file.type,cacheControl:"public, max-age=31536000, immutable"}});
       return json({url:new URL("/media/"+key,request.url).toString()});
     }
-   }catch(error){return json({error:error.message||"Внутренняя ошибка."},400);}
+   }catch(error){return json({error:error instanceof ValidationError?error.message:"Внутренняя ошибка сервера."},error instanceof ValidationError?400:500);}
    return json({error:"Маршрут не найден."},404);
   }
-  if(path.startsWith("/media/")){
-   const key=decodeURIComponent(path.slice(7));const object=await env.MEDIA.get(key);
+  if(path.startsWith("/media/")&&request.method==="GET"){
+   let key;try{key=decodeURIComponent(path.slice(7));}catch{return new Response("Bad request",{status:400});}
+   if(!/^[0-9a-f-]{36}\.webp$/i.test(key))return new Response("Not found",{status:404});
+   const object=await env.MEDIA.get(key);
    if(!object)return new Response("Not found",{status:404});
    const headers=new Headers();object.writeHttpMetadata(headers);headers.set("etag",object.httpEtag);
    return new Response(object.body,{headers});
