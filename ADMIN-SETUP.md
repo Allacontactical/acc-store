@@ -18,6 +18,9 @@ The Wrangler configuration is in `admin-api/wrangler.jsonc`. Deploy using that e
 - One-time import of the current public `products.json`.
 - Public read-only `/api/catalog` endpoint with allowlisted CORS.
 - Login throttling stored in D1.
+- Server-side JSON request limits (256 KB for catalog writes; 4 KB for login), field-length and URL validation, and a bounded streaming JSON reader.
+- Multipart photo upload request cap, per-file WebP size/signature validation, and authenticated cleanup of newly uploaded R2 files if a product save fails.
+- Browser-side image processing rejects source images above 40 megapixels to reduce memory pressure on older devices.
 
 ## Before the first test deployment
 1. Confirm the Cloudflare account still contains the D1 database and R2 bucket listed above.
@@ -39,4 +42,5 @@ The Wrangler configuration is in `admin-api/wrangler.jsonc`. Deploy using that e
 - Compare a sample of existing products, including IDs, prices, Prom links, availability text, descriptions, and image arrays.
 - Test admin login, token expiry, failed-login throttling, create/edit/unpublish, ten-photo limit, JPG/PNG/WebP-to-WebP conversion, rejection of non-WebP direct uploads, post-conversion size checks, and mobile layout.
 - Test public catalog CORS and R2 media delivery.
+- Test invalid/oversized JSON, excessive field lengths, invalid image URLs, oversized multipart requests, and cleanup after a failed product save.
 - Connect the storefront only after successful verification and explicit approval.
