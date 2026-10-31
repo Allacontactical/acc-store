@@ -88,7 +88,6 @@
     const files=Array.from($("photos").files||[]);
     const allowed=["image/jpeg","image/png","image/webp"];
     if(files.some(file=>!allowed.includes(file.type))){setNotice("Поддерживаются только JPG, PNG и WebP.",true);$("photos").value="";return;}
-    if(files.some(file=>file.size>MAX_FILE_BYTES)){setNotice("Каждое фото должно быть не больше 8 МБ.",true);$("photos").value="";return;}
     if(currentImages.length+files.length>MAX_IMAGES){setNotice("Всего в карточке может быть не более 10 фото. Сейчас сохранено: "+currentImages.length+".",true);$("photos").value="";return;}
     releasePreviewUrls();selectedFiles=files;renderPhotos();
   });
