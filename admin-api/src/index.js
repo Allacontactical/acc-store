@@ -138,7 +138,12 @@ export default {
       await env.DB.prepare("UPDATE products SET published=0,updated_at=? WHERE id=?").bind(new Date().toISOString(),decodeURIComponent(match[1])).run();
       return json({ok:true});
     }
-    const mediaDelete=path.match(/^\\/api\\/media\\/([0-9a-f-]{36}\\.webp)$/i);\n    if(mediaDelete&&request.method==="DELETE"){\n      await env.MEDIA.delete(mediaDelete[1]);\n      return json({ok:true});\n    }\n    if(path==="/api/upload"&&request.method==="POST"){
+    const mediaDelete=path.match(/^\/api\/media\/([0-9a-f-]{36}\.webp)$/i);
+    if(mediaDelete&&request.method==="DELETE"){
+      await env.MEDIA.delete(mediaDelete[1]);
+      return json({ok:true});
+    }
+    if(path==="/api/upload"&&request.method==="POST"){
       const form=await request.formData();const file=form.get("file");
       if(!file||typeof file==="string")return json({error:"Файл не найден."},400);
       if(file.type!=="image/webp")return json({error:"Сервер принимает фотографии только в формате WebP. Загрузите фото через панель ACC для автоматического преобразования."},415);
