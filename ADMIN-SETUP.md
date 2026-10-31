@@ -5,7 +5,7 @@ The administration panel is a separate Cloudflare Worker. It does not replace or
 ## Included
 - Password-protected admin interface at `/admin`.
 - D1 product records and R2 photo storage.
-- Up to 10 images per product, JPG/PNG/WebP, maximum 8 MB per image; server checks the file signature.
+- Up to 10 images per product. Admin accepts JPG/PNG/WebP and converts every upload to WebP (quality 0.86, original dimensions preserved); converted files are limited to 8 MB. The Worker accepts and stores WebP only and checks the file signature.
 - Draft/published state, edit existing records, and unpublish without deleting.
 - One-time import of the current public `products.json`.
 - Public read-only `/api/catalog` endpoint with allowlisted CORS.
@@ -30,6 +30,6 @@ The administration panel is a separate Cloudflare Worker. It does not replace or
 ## Verification before production
 - Confirm imported row count matches the source catalog (currently 281 products).
 - Compare a sample of existing products, including their IDs, prices, Prom links, availability text and image arrays.
-- Test admin login, expiry, failed-login throttling, create/edit/unpublish, ten-photo limit, file type/size checks and mobile layout.
+- Test admin login, expiry, failed-login throttling, create/edit/unpublish, ten-photo limit, JPG/PNG/WebP-to-WebP conversion, rejection of non-WebP direct uploads, post-conversion size checks and mobile layout.
 - Test public catalog CORS and R2 media delivery.
 - Connect storefront only after successful verification and explicit approval.
