@@ -144,6 +144,7 @@ export default {
       return json({ok:true});
     }
     if(path==="/api/upload"&&request.method==="POST"){
+      if(Number(request.headers.get("Content-Length")||0)>9*1024*1024)return json({error:"Размер запроса превышает допустимый предел."},413);
       const form=await request.formData();const file=form.get("file");
       if(!file||typeof file==="string")return json({error:"Файл не найден."},400);
       if(file.type!=="image/webp")return json({error:"Сервер принимает фотографии только в формате WebP. Загрузите фото через панель ACC для автоматического преобразования."},415);
