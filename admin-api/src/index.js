@@ -42,9 +42,22 @@ function boundedText(value, name, max=MAX_PRODUCT_TEXT){
 async function readJson(request, maxBytes=MAX_JSON_BYTES){
   const declared=Number(request.headers.get("Content-Length")||0);
   if(declared>maxBytes)throw new ValidationError("Слишком большой запрос.");
-  const raw=await request.text();
-  if(encoder.encode(raw).byteLength>maxBytes)throw new ValidationError("Слишком большой запрос.");
-  try{return JSON.parse(raw);}catch{throw new ValidationError("Некорректный JSON.");}
+  if(!request.body)throw new ValidationError("Пустой запрос.");
+  const reader=request.body.getReader();
+  const chunks=[];let total=0;
+  try{
+    while(true){
+      const part=await reader.read();
+      if(part.done)break;
+      total+=part.value.byteLength;
+      if(total>maxBytes){await reader.cancel();throw new ValidationError("Слишком большой запрос.");}
+      chunks.push(part.value);
+    }
+  }finally{reader.releaseLock();}
+  const bytes=new Uint8Array(total);let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  try{return JSON.parse(new TextDecoder().decode(bytes));}
+  catch(error){if(error instanceof ValidationError)throw error;throw new ValidationError("Некорректный JSON.");}
 }
 function cleanProduct(p){
   if(!p||typeof p!=="object"||Array.isArray(p))throw new ValidationError("Некорректная карточка товара.");
