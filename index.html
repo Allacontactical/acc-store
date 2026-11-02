@@ -16,6 +16,8 @@
   <meta name="theme-color" content="#20251d">
   <meta name="description" content="Мисливські куртки, штани, костюми, взуття та тактичне спорядження. Обирайте екіпірування AllaconTactical і оформлюйте замовлення онлайн.">
   <title>Мисливський одяг, взуття та екіпірування | AllaconTactical</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/allacon-emblem.svg">
+  <link rel="apple-touch-icon" href="./assets/allacon-emblem.svg">
 
   <style>
     :root {
@@ -57,13 +59,32 @@
     }
 
     .logo {
-      font-size: 23px;
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      min-width: max-content;
+      font-size: 21px;
       font-weight: 900;
-      letter-spacing: 1px;
+      letter-spacing: 1.1px;
+      line-height: 1.05;
     }
 
+    .logo img {
+      display: block;
+      width: 54px;
+      height: 54px;
+      flex: 0 0 54px;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
+    }
 
-    .logo span { color: var(--orange); }
+    .logo-wordmark { display: flex; flex-direction: column; gap: 4px; }
+    .logo-wordmark span { color: #c9955b; }
+    .logo-wordmark small {
+      color: #c4c6b9;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.55px;
+    }
 
     .language-switcher {
       display: flex;
@@ -528,7 +549,7 @@
       .products { grid-template-columns: 1fr; }
       .category-grid { grid-template-columns: 1fr; }
       .nav { align-items: flex-start; }
-      .logo { font-size: 20px; }
+      .logo { font-size: 18px; gap: 8px; }\n      .logo img { width: 46px; height: 46px; flex-basis: 46px; }\n      .logo-wordmark small { font-size: 7px; letter-spacing: 1px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -567,7 +588,7 @@
 <body>
   <header>
     <div class="wrap nav">
-      <a class="logo" href="#home">ALLACON<span>TACTICAL</span></a>
+      <a class="logo" href="#home" aria-label="AllaconTactical — головна"><img src="./assets/allacon-emblem.svg" alt="" width="54" height="54"><span class="logo-wordmark">ALLACON<span>TACTICAL</span><small>ДЛЯ СПРАВЖНІХ ПРОФЕСІОНАЛІВ</small></span></a>
       <nav aria-label="Головна навігація">
         <a href="#categories">Категорії</a>
         <a href="#products">Товари</a>
