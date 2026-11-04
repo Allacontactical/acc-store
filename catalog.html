@@ -150,6 +150,7 @@ buttons.forEach(function(b){b.addEventListener("click",function(){var lang=b.get
 <script>
 (function(){
 var all=[],grid=document.getElementById("products"),search=document.getElementById("search"),category=document.getElementById("category"),sort=document.getElementById("sort"),count=document.getElementById("count"),expectedOnly=document.getElementById("expectedOnly"),showExpected=false;
+var initialQuery=new URLSearchParams(window.location.search).get("q");if(initialQuery)search.value=initialQuery;
 function lang(){var m=document.cookie.match(/googtrans=([^;]+)/);if(!m)return "uk";var p=m[1].split("/");return p[p.length-1]||"uk";}
 function desc(p){return lang()==="ru"&&p.description_ru?p.description_ru:(p.description||p.description_ru||"");}
 function price(p){var n=Number(p.price);return Number.isFinite(n)?n:Infinity;}
