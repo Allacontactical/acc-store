@@ -31,7 +31,7 @@
     <section id="loginView">
       <h1>Особистий кабінет</h1>
       <p>Увійдіть через Telegram. Це підтвердить, що саме ви керуєте Telegram-акаунтом, і відкриє доступ до вашого кабінету.</p>
-      <div class="actions"><button id="loginButton" type="button">Увійти через Telegram</button><a class="button secondary" href="./index.html">Повернутися до магазину</a></div>
+      <div class="actions"><button id="loginButton" type="button">Увійти через Telegram</button><a id="telegramLink" class="button secondary hidden" href="#" target="_blank" rel="noopener">Відкрити Telegram</a><a class="button secondary" href="./index.html">Повернутися до магазину</a></div>
       <div id="status" role="status" aria-live="polite">Натисніть «Увійти через Telegram», щоб створити безпечний запит на вхід.</div>
       <p class="hint">Посилання для підтвердження діє 5 хвилин. Нікому не пересилайте його.</p>
     </section>
@@ -85,12 +85,20 @@
     const button = $("loginButton");
     button.disabled = true;
     stopPolling();
+    const telegramLink = $("telegramLink");
+    telegramLink.classList.add("hidden");
+    // Open synchronously inside the click gesture so popup blockers do not interrupt login.
+    const telegramWindow = window.open("about:blank", "_blank");
     try {
       showStatus("Створюємо запит на вхід…");
       const challenge = await api("/auth/start", { method: "POST", body: "{}" });
-      const telegramWindow = window.open(challenge.telegram_url, "_blank");
-      if (telegramWindow) telegramWindow.opener = null;
-      else window.location.href = challenge.telegram_url;
+      if (telegramWindow) {
+        telegramWindow.opener = null;
+        telegramWindow.location.replace(challenge.telegram_url);
+      } else {
+        telegramLink.href = challenge.telegram_url;
+        telegramLink.classList.remove("hidden");
+      }
       showStatus("Підтвердіть вхід у Telegram. Очікуємо підтвердження…");
       const deadline = Date.now() + challenge.expires_in * 1000;
       pollTimer = setInterval(async () => {
@@ -107,7 +115,7 @@
           }
         } catch (error) { stopPolling(); showStatus(error.message); button.disabled = false; }
       }, 1800);
-    } catch (error) { showStatus(error.message); button.disabled = false; }
+    } catch (error) { if (telegramWindow) telegramWindow.close(); showStatus(error.message); button.disabled = false; }
   }
   $("loginButton").addEventListener("click", beginLogin);
   $("logoutButton").addEventListener("click", async () => {
