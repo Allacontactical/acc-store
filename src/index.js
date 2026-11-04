@@ -37,11 +37,11 @@ async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
 }
-async function telegramSend(env, chatId, text) {
+async function telegramSend(env, chatId, text, replyMarkup) {
   const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text })
+    body: JSON.stringify({ chat_id: chatId, text, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) })
   });
   return response.ok;
 }
@@ -138,6 +138,15 @@ async function handleWebhook(request, env) {
   const fullText = message.text.trim();
   const command = fullText.split(/\s+/, 1)[0].split("@")[0];
 
+  const catalogKeyboard = {
+    inline_keyboard: [
+      [{ text: "🧥 Костюми, куртки та жилети", url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki" }],
+      [{ text: "👖 Штани та нагрудники", url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki" }],
+      [{ text: "🥾 Худі, пуловери та футболки", url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri" }],
+      [{ text: "🧢 Шапки та кепки", url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki" }]
+    ]
+  };
+
   if (command === "/start") {
     const payload = fullText.split(/\s+/)[1] || "";
     const match = payload.match(/^login_([a-f0-9]{64})$/);
@@ -171,14 +180,6 @@ async function handleWebhook(request, env) {
     return new Response("OK");
   }
 
-  const catalogKeyboard = {
-    inline_keyboard: [
-      [{ text: "🧥 Костюми, куртки та жилети", url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki" }],
-      [{ text: "👖 Штани та нагрудники", url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki" }],
-      [{ text: "🥾 Худі, пуловери та футболки", url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri" }],
-      [{ text: "🧢 Шапки та кепки", url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki" }]
-    ]
-  };
   let reply = "Вітаємо в AllaconTactical! 🎯\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
   let replyMarkup;
   if (command === "/catalog") {
