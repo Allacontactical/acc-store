@@ -88,8 +88,9 @@
     try {
       showStatus("Створюємо запит на вхід…");
       const challenge = await api("/auth/start", { method: "POST", body: "{}" });
-      const telegramWindow = window.open(challenge.telegram_url, "_blank", "noopener");
-      if (!telegramWindow) window.location.href = challenge.telegram_url;
+      const telegramWindow = window.open(challenge.telegram_url, "_blank");
+      if (telegramWindow) telegramWindow.opener = null;
+      else window.location.href = challenge.telegram_url;
       showStatus("Підтвердіть вхід у Telegram. Очікуємо підтвердження…");
       const deadline = Date.now() + challenge.expires_in * 1000;
       pollTimer = setInterval(async () => {
