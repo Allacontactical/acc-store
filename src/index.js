@@ -59,9 +59,11 @@ async function handleAuthStart(request, env) {
     telegram_url: `https://t.me/${BOT_USERNAME}?start=login_${raw}`
   }, 201);
 }
-async function handleAuthStatus(url, env) {
+async function handleAuthStatus(request, env) {
   if (!env.DB) return json({ error: "D1 binding DB is not configured" }, 503);
-  const raw = url.searchParams.get("token") || "";
+  let payload;
+  try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const raw = typeof payload.token === "string" ? payload.token : "";
   if (!/^[a-f0-9]{64}$/.test(raw)) return json({ error: "Invalid login token" }, 400);
   const tokenHash = await sha256(raw);
   const challenge = await env.DB.prepare(
@@ -208,7 +210,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (request.method === "GET" && url.pathname === "/") return withCors(new Response("AllaconTactical bot is ready."), request);
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
-    if (request.method === "GET" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(url, env), request);
+    if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
     if ((request.method === "GET" && url.pathname === "/account/me") ||
         (request.method === "POST" && url.pathname === "/auth/logout")) {
       return withCors(await handleAccount(request, env, url), request);
