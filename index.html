@@ -553,6 +553,72 @@
 
       html { scroll-behavior: auto; }
     }
+   
+    /* Approved Allacon desktop/mobile layout */
+    .site-header{background:#171b16;border-bottom:1px solid #566047;position:relative;z-index:10}
+    .header-main{min-height:104px;display:grid;grid-template-columns:minmax(230px,1fr) minmax(260px,1.25fr) auto;align-items:center;gap:26px;padding:13px 0}
+    .brand-lockup{display:flex;align-items:center;gap:13px;min-width:0}
+    .brand-lockup img{width:76px;height:76px;object-fit:contain;display:block}
+    .brand-wordmark{display:flex;flex-direction:column;line-height:1}
+    .brand-wordmark strong{font-size:25px;letter-spacing:2.6px;color:#e6d3b5}
+    .brand-wordmark em{font-style:normal;font-size:15px;letter-spacing:5.4px;color:#b77b43;margin-top:5px}
+    .brand-wordmark small{font-size:8px;letter-spacing:1.1px;color:#b9bdb2;margin-top:9px}
+    .header-search{display:flex;min-width:0;height:44px;border:1px solid #59634b;background:#22291f;border-radius:3px;overflow:hidden}
+    .header-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#f4f2eb;padding:0 14px;font:14px Arial,sans-serif}
+    .header-search input::placeholder{color:#aeb4a4}
+    .header-search button{width:48px;border:0;background:#b8793f;color:#171b16;font-size:27px;cursor:pointer}
+    .header-tools{display:flex;align-items:center;justify-content:flex-end;gap:13px}
+    .header-tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:47px;padding:4px 2px;border:0;background:none;color:#eee9dc;font:inherit;cursor:pointer}
+    .header-tool>span{font-size:25px;line-height:1;color:#c9955b}
+    .header-tool small{font-size:10px;white-space:nowrap;color:#d4d3c9}
+    .header-tool b{color:#e4a05c;font-weight:700}
+    .nav-band{background:#252c21;border-top:1px solid #343d2e}
+    .main-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;flex-wrap:wrap}
+    .main-nav a{font-size:12px;letter-spacing:.2px;color:#e8e7df;padding:14px 0}
+    .main-nav a:hover{color:#e59a4e}
+    .hero-premium{position:relative;isolation:isolate;min-height:590px;display:flex;align-items:center;overflow:hidden;padding:78px 0;background:#151b15 url('https://images.pexels.com/photos/10802041/pexels-photo-10802041.jpeg?auto=compress&cs=tinysrgb&w=2000') center 42%/cover no-repeat}
+    .hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(12,17,12,.96) 0%,rgba(16,22,15,.82) 43%,rgba(17,23,16,.22) 100%),linear-gradient(0deg,rgba(10,14,10,.42),transparent 55%)}
+    .hero-content{position:relative;z-index:1}
+    .hero-kicker{color:#c9955b;font-size:11px;font-weight:700;letter-spacing:3px;margin-bottom:20px}
+    .hero-premium h1{font-size:clamp(54px,8vw,104px);line-height:.88;letter-spacing:2px;margin:0;color:#f0eadf;text-shadow:0 3px 22px rgba(0,0,0,.4)}
+    .hero-premium h1 span{color:#c9955b}
+    .hero-slogan{margin:24px 0 9px!important;color:#e4d4bc!important;font-size:20px!important;letter-spacing:2px;font-weight:700}
+    .hero-description{max-width:540px;margin:0;color:#d1d3c8;font-size:17px}
+    .hero-premium .btn{padding:14px 22px;border-radius:2px;background:#c17d3f;color:#171b16;text-transform:uppercase;letter-spacing:.5px;font-size:12px}
+    .hero-premium .btn.secondary{background:rgba(19,25,18,.35);border:1px solid #c3a17a;color:#f4f2eb}
+    .hero-caption{position:absolute;right:4%;bottom:28px;color:rgba(240,234,223,.72);font-size:10px;letter-spacing:3px}
+    .product-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .product-card-actions button{padding:9px 7px;border:1px solid #7c684d;background:transparent;color:#e9ddcb;font-size:12px;cursor:pointer}
+    .product-card-actions button:hover,.product-card-actions button.is-active{background:#c17d3f;color:#171b16;border-color:#c17d3f}
+    .cart-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:18px}
+    .cart-modal.is-open{display:flex}
+    .cart-panel{width:min(520px,100%);max-height:82vh;overflow:auto;background:#20251d;border:1px solid #6b735d;padding:24px;border-radius:6px}
+    .cart-panel h2{margin-top:0}
+    .cart-line{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #3b4434;font-size:14px}
+    .cart-close{float:right;border:0;background:none;color:#f4f2eb;font-size:25px;cursor:pointer}
+    .cart-empty{color:#b9bdb2}
+    @media(max-width:980px){.header-main{grid-template-columns:1fr auto;gap:12px}.header-search{grid-column:1/-1;grid-row:2}.header-tools{gap:9px}.main-nav{justify-content:flex-start;column-gap:18px}}
+    @media(max-width:640px){
+      .header-main{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px 0}
+      .brand-lockup{gap:8px}.brand-lockup img{width:54px;height:54px}
+      .brand-wordmark strong{font-size:19px;letter-spacing:1.7px}.brand-wordmark em{font-size:11px;letter-spacing:4px}.brand-wordmark small{font-size:6px;letter-spacing:.6px;margin-top:6px}
+      .header-tools{gap:4px;flex-wrap:wrap}.header-tool{min-width:34px}.header-tool>span{font-size:21px}.header-tool small{font-size:8px}
+      .header-tools .language-switcher{display:none}
+      .header-search{grid-column:1/-1;grid-row:2;height:40px}
+      .nav-band{overflow-x:auto}.main-nav{width:max-content;min-height:42px;gap:18px;flex-wrap:nowrap}.main-nav a{font-size:11px;padding:12px 0}
+      .hero-premium{min-height:610px;padding:70px 0 88px;background-position:58% center}
+      .hero-shade{background:linear-gradient(90deg,rgba(12,17,12,.9),rgba(12,17,12,.45)),linear-gradient(0deg,rgba(10,14,10,.5),transparent 65%)}
+      .hero-premium h1{font-size:clamp(52px,15vw,78px)}
+      .hero-kicker{font-size:9px;letter-spacing:1.8px}
+      .hero-slogan{font-size:16px!important;letter-spacing:1px}
+      .hero-description{font-size:15px;max-width:330px}
+      .hero-premium .actions{display:grid;grid-template-columns:1fr;max-width:320px}
+      .hero-premium .btn{text-align:center}
+      .hero-caption{right:18px;bottom:18px;font-size:8px;letter-spacing:1.5px}
+      .product-card-actions{grid-template-columns:1fr 1fr}
+    }
+    @media(prefers-reduced-motion:reduce){.hero-premium{background-attachment:scroll}}
+
   </style>
   <meta name="google-site-verification" content="kKhYut7UVtmoKe1Et6Yydk7NtmHyHDEHnXAXjsy-di8" />
 
@@ -579,38 +645,49 @@
 </head>
 
 <body>
-  <header>
-    <div class="wrap nav">
-      <a class="logo" href="#home" aria-label="AllaconTactical — на головну" style="display:inline-flex;align-items:center;line-height:0;" style="display:inline-flex;align-items:center;line-height:0;"><img src="./assets/allacon-approved-logo.jpg" alt="Allacon" width="58" height="58" style="display:block;width:58px;height:58px;object-fit:contain;"></a>
-      <nav aria-label="Головна навігація">
-        <a href="#categories">Категорії</a>
-        <a href="#products">Товари</a>
-        <a href="#advantages">Переваги</a>
-        <a href="#faq">Часті запитання</a>
-        <a href="https://allacontactical.com.ua/blog.html">Блог</a>
-        <a href="#contacts">Контакти</a>
-      </nav>
-      <div class="language-switcher" role="group" aria-label="Оберіть мову сайту">
-        <button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button>
-        <button type="button" data-language="en" aria-pressed="false" title="English">EN</button>
-        <button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button>
+  <header class="site-header">
+    <div class="wrap header-main">
+      <a class="brand-lockup" href="#home" aria-label="AllaconTactical — на головну">
+        <img src="./assets/allacon-approved-logo.jpg" alt="Затверджена емблема Allacon" width="76" height="76">
+        <span class="brand-wordmark"><strong>ALLACON</strong><em>TACTICAL</em><small>ДЛЯ СПРАВЖНІХ ПРОФЕСІОНАЛІВ</small></span>
+      </a>
+      <form class="header-search" role="search" action="./catalog.html" method="get">
+        <input type="search" name="q" placeholder="Пошук товарів, брендів та категорій" aria-label="Пошук товарів">
+        <button type="submit" aria-label="Шукати">⌕</button>
+      </form>
+      <div class="header-tools">
+        <a class="header-tool" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener" aria-label="Особистий кабінет та консультація"><span aria-hidden="true">♙</span><small>Кабінет</small></a>
+        <button class="header-tool" id="favoritesToggle" type="button" aria-label="Показати обране"><span aria-hidden="true">♡</span><small>Обране <b id="favoritesCount">0</b></small></button>
+        <button class="header-tool" id="cartToggle" type="button" aria-label="Відкрити кошик"><span aria-hidden="true">▢</span><small>Кошик <b id="cartCount">0</b></small></button>
+        <div class="language-switcher" role="group" aria-label="Оберіть мову сайту">
+          <button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button>
+          <button type="button" data-language="en" aria-pressed="false" title="English">EN</button>
+          <button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button>
+        </div>
+        <div id="google_translate_element" aria-hidden="true"></div>
       </div>
-      <div id="google_translate_element" aria-hidden="true"></div>
+    </div>
+    <div class="nav-band">
+      <nav class="wrap main-nav" aria-label="Основна навігація">
+        <a href="./catalog.html">Каталог</a><a href="./hunting-clothing.html">Одяг</a><a href="./hunting-footwear.html">Взуття</a><a href="./hunting-headwear.html">Головні убори</a><a href="./hunting-accessories.html">Аксесуари</a><a href="./tactical-gear.html">Тактичне спорядження</a><a href="./fishing-gear.html">Риболовля</a><a href="./blog.html">Блог</a><a href="#how-to-buy">Доставка й оплата</a><a href="#faq">FAQ</a><a href="#contacts">Контакти</a>
+      </nav>
     </div>
   </header>
 
   <main>
-    <section class="hero" id="home">
-      <div class="wrap">
-        <div class="eyebrow">AllaconTactical</div>
-        <h1>Мисливський одяг, взуття та екіпірування</h1>
-        <p>Перевірене екіпірування для тих, хто цінує комфорт, надійність і готовність до будь-яких умов.</p>
+    <section class="hero hero-premium" id="home">
+      <div class="hero-shade"></div>
+      <div class="wrap hero-content">
+        <div class="hero-kicker">ALLACONTACTICAL · PREMIUM OUTDOOR EQUIPMENT</div>
+        <h1>ALLACON<br><span>TACTICAL</span></h1>
+        <p class="hero-slogan">Для справжніх професіоналів</p>
+        <p class="hero-description">Мисливський одяг, взуття та спорядження для тих, хто знає ціну надійного екіпірування.</p>
         <div class="actions">
           <a class="btn" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Отримати консультацію фахівця</a>
-          <a class="btn secondary" href="./catalog.html">Перейти до каталогу</a>
-          <a class="btn secondary" href="#categories">Обрати категорію</a>
+          <a class="btn secondary" href="./catalog.html">Переглянути каталог</a>
         </div>
       </div>
+      <div class="hero-caption">EQUIPMENT · EXPERIENCE · CONFIDENCE</div>
     </section>
 
     <section id="categories">
@@ -810,6 +887,14 @@
 </div>
     </div>
   </footer>
+  <div class="cart-modal" id="cartModal" aria-hidden="true">
+    <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+      <button class="cart-close" id="cartClose" type="button" aria-label="Закрити">×</button>
+      <h2 id="cartTitle">Ваш кошик</h2><div id="cartItems"><p class="cart-empty">Кошик поки порожній.</p></div>
+      <div class="actions"><a class="btn" id="cartCheckout" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Узгодити замовлення в Telegram</a></div>
+      <p class="muted" style="font-size:12px">Наявність, розмір і підсумкову вартість підтверджує фахівець перед оплатою.</p>
+    </div>
+  </div>
 
   <script>
     (function () {
@@ -975,6 +1060,21 @@
         prom.textContent = "Також доступно на Prom.ua →";
         body.appendChild(prom);
 
+        var tools = document.createElement("div");
+        tools.className = "product-card-actions";
+        var favorite = document.createElement("button");
+        favorite.type = "button";
+        favorite.textContent = "♡ Обране";
+        favorite.setAttribute("data-favorite-id", String(product.id));
+        favorite.setAttribute("aria-pressed", "false");
+        var add = document.createElement("button");
+        add.type = "button";
+        add.textContent = "+ До кошика";
+        add.setAttribute("data-cart-id", String(product.id));
+        tools.appendChild(favorite);
+        tools.appendChild(add);
+        body.appendChild(tools);
+
         article.appendChild(body);
         return article;
       }
@@ -1013,6 +1113,33 @@
           grid.appendChild(error);
           count.textContent = "Вітрина тимчасово недоступна";
         });
+    }());
+ 
+    (function(){
+      var cart=[],favorites=[],allProducts=[];
+      try{cart=JSON.parse(localStorage.getItem("accCart")||"[]");favorites=JSON.parse(localStorage.getItem("accFavorites")||"[]");}catch(e){cart=[];favorites=[];}
+      var cartModal=document.getElementById("cartModal"),cartItems=document.getElementById("cartItems");
+      function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
+      function counters(){document.getElementById("cartCount").textContent=cart.length;document.getElementById("favoritesCount").textContent=favorites.length;}
+      function renderCart(){
+        cartItems.textContent="";
+        if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
+        cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
+        var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
+        document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot?text="+encodeURIComponent(message);
+      }
+      document.getElementById("cartToggle").addEventListener("click",function(){renderCart();cartModal.classList.add("is-open");cartModal.setAttribute("aria-hidden","false");});
+      document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
+      cartModal.addEventListener("click",function(e){if(e.target===cartModal){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");}});
+      document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var id=card.querySelector("[data-favorite-id]").getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;});this.setAttribute("aria-pressed",only?"true":"false");});
+      grid.addEventListener("click",function(e){
+        var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");
+        if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"♥ Обране":"♡ Обране";save();counters();}
+        if(c){var cid=c.getAttribute("data-cart-id");if(cart.indexOf(cid)<0){cart.push(cid);c.classList.add("is-active");c.textContent="✓ Додано";save();counters();}}
+      });
+      counters();
+      var headerSearch=document.querySelector(".header-search");
+      headerSearch.addEventListener("submit",function(e){var input=headerSearch.querySelector("input");if(!input.value.trim())e.preventDefault();});
     }());
   </script>
 
