@@ -617,6 +617,23 @@
       .hero-caption{right:18px;bottom:18px;font-size:8px;letter-spacing:1.5px}
       .product-card-actions{grid-template-columns:1fr 1fr}
     }
+
+    /* Mobile header spacing: keep the brand clear of account controls */
+    @media(max-width:640px){
+      .header-main{grid-template-columns:minmax(0,1fr) auto;column-gap:10px}
+      .brand-lockup{min-width:0;gap:7px}
+      .brand-lockup img{width:46px;height:46px;flex:0 0 46px}
+      .brand-wordmark{min-width:0}
+      .brand-wordmark strong{font-size:clamp(14px,4.2vw,17px);letter-spacing:.8px;white-space:nowrap}
+      .brand-wordmark em{font-size:9px;letter-spacing:2.8px;white-space:nowrap}
+      .brand-wordmark small{font-size:5px;letter-spacing:.25px;white-space:nowrap}
+      .header-tools{display:grid;grid-template-columns:repeat(3,minmax(30px,1fr));gap:4px 2px;width:max-content;max-width:100%;align-items:center}
+      .header-tool{min-width:30px;padding:3px 1px}
+      .header-tool small{font-size:7px}
+      .language-switcher{grid-column:1/-1;justify-self:end}
+      #google_translate_element{display:none}
+    }
+
     @media(prefers-reduced-motion:reduce){.hero-premium{background-attachment:scroll}}
 
   </style>
