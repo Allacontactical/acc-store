@@ -38,5 +38,5 @@ jobs:
         run: |
           curl --fail-with-body --silent --show-error \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
-            --data-urlencode "url=https://allacontactical-bot.allacontactical.workers.dev/webhook" \\
+            --data-urlencode "url=https://allacontactical-bot.allacontactical.workers.dev/webhook" \
             --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}"
