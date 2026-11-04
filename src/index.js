@@ -164,7 +164,9 @@ async function handleWebhook(request, env) {
       }
     } else {
       await telegramSend(env, chatId,
-        "Вітаємо в AllaconTactical! 🎯\n\nДопоможемо підібрати екіпірування для полювання.\n\nКаталог: https://allacontactical.com.ua/catalog.html");
+        "Вітаємо в AllaconTactical! 🎯\n\n" +
+        "Допоможемо підібрати екіпірування для полювання.\n\n" +
+        "Оберіть категорію товарів:", catalogKeyboard);
     }
     return new Response("OK");
   }
