@@ -47,7 +47,7 @@ async function telegramSend(env, chatId, text, replyMarkup) {
 }
 async function handleAuthStart(request, env) {
   if (!env.DB) return json({ error: "D1 binding DB is not configured" }, 503);
-  const raw = randomToken();
+  const raw = randomToken(28); // 56 hex chars; login_ prefix keeps Telegram start payload within its 64-char limit.
   const tokenHash = await sha256(raw);
   const expiresAt = new Date(Date.now() + CHALLENGE_TTL_SECONDS * 1000).toISOString();
   await env.DB.prepare(
@@ -64,7 +64,7 @@ async function handleAuthStatus(request, env) {
   let payload;
   try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
   const raw = typeof payload.token === "string" ? payload.token : "";
-  if (!/^[a-f0-9]{64}$/.test(raw)) return json({ error: "Invalid login token" }, 400);
+  if (!/^[a-f0-9]{56}$/.test(raw)) return json({ error: "Invalid login token" }, 400);
   const tokenHash = await sha256(raw);
   const challenge = await env.DB.prepare(
     "SELECT status, expires_at FROM login_challenges WHERE token_hash = ?"
@@ -151,7 +151,7 @@ async function handleWebhook(request, env) {
 
   if (command === "/start") {
     const payload = fullText.split(/\s+/)[1] || "";
-    const match = payload.match(/^login_([a-f0-9]{64})$/);
+    const match = payload.match(/^login_([a-f0-9]{56})$/);
     if (match && env.DB) {
       const hash = await sha256(match[1]);
       const result = await env.DB.prepare(
