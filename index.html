@@ -67,13 +67,7 @@
       line-height: 1.05;
     }
 
-    .logo img {
-      display: block;
-      width: 54px;
-      height: 54px;
-      flex: 0 0 54px;
-      filter: drop-shadow(0 2px 5px rgba(0,0,0,.35));
-    ;mix-blend-mode:screen}
+    
 
     .logo-wordmark { display: flex; flex-direction: column; gap: 4px; }
     .logo-wordmark span { color: #c9955b; }
@@ -547,7 +541,7 @@
       .products { grid-template-columns: 1fr; }
       .category-grid { grid-template-columns: 1fr; }
       .nav { align-items: flex-start; }
-      .logo { font-size: 18px; gap: 8px; }\n      .logo img { width: 46px; height: 46px; flex-basis: 46px; }\n      .logo-wordmark small { font-size: 7px; letter-spacing: 1px; }
+      .logo { font-size: 18px; gap: 8px; }\n      \n      .logo-wordmark small { font-size: 7px; letter-spacing: 1px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -581,15 +575,12 @@
   </script>
   <link rel="stylesheet" href="./availability.css">
   <script src="./availability.js" defer></script>
-  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=20261104">
 </head>
 
 <body>
   <header>
     <div class="wrap nav">
-      <a class="logo" href="#home" aria-label="AllaconTactical — на головну">
-        <img src="./assets/allacon-logo.svg?v=20261104-approved2" alt="Логотип AllaconTactical" width="54" height="56">
-        <span class="logo-wordmark">ALLACON<span>TACTICAL</span><small>ДЛЯ СПРАВЖНІХ ПРОФЕСІОНАЛІВ</small></span>
+      <a class="logo" href="#home" aria-label="AllaconTactical — на головну"> <span class="logo-wordmark">ALLACON<span>TACTICAL</span><small>ДЛЯ СПРАВЖНІХ ПРОФЕСІОНАЛІВ</small></span>
       </a>
       <nav aria-label="Головна навігація">
         <a href="#categories">Категорії</a>
