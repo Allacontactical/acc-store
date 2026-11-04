@@ -29,6 +29,7 @@ jobs:
             TELEGRAM_WEBHOOK_SECRET
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
 
       - name: Set Telegram webhook
         env:
