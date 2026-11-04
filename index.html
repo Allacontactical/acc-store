@@ -576,7 +576,7 @@
     .main-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;flex-wrap:wrap}
     .main-nav a{font-size:12px;letter-spacing:.2px;color:#e8e7df;padding:14px 0}
     .main-nav a:hover{color:#e59a4e}
-    .hero-premium{position:relative;isolation:isolate;min-height:590px;display:flex;align-items:center;overflow:hidden;padding:78px 0;background:#151b15 url('https://images.pexels.com/photos/10802041/pexels-photo-10802041.jpeg?auto=compress&cs=tinysrgb&w=2000') center 42%/cover no-repeat}
+    .hero-premium{position:relative;isolation:isolate;min-height:590px;display:flex;align-items:center;overflow:hidden;padding:78px 0;background:#151b15 url('https://images.pexels.com/photos/10802041/pexels-photo-10802041.jpeg?cs=srgb&dl=pexels-bailey-cloud-160660369-10802041.jpg&fm=jpg') center 42%/cover no-repeat}
     .hero-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(12,17,12,.96) 0%,rgba(16,22,15,.82) 43%,rgba(17,23,16,.22) 100%),linear-gradient(0deg,rgba(10,14,10,.42),transparent 55%)}
     .hero-content{position:relative;z-index:1}
     .hero-kicker{color:#c9955b;font-size:11px;font-weight:700;letter-spacing:3px;margin-bottom:20px}
@@ -603,7 +603,7 @@
       .brand-lockup{gap:8px}.brand-lockup img{width:54px;height:54px}
       .brand-wordmark strong{font-size:19px;letter-spacing:1.7px}.brand-wordmark em{font-size:11px;letter-spacing:4px}.brand-wordmark small{font-size:6px;letter-spacing:.6px;margin-top:6px}
       .header-tools{gap:4px;flex-wrap:wrap}.header-tool{min-width:34px}.header-tool>span{font-size:21px}.header-tool small{font-size:8px}
-      .header-tools .language-switcher{display:none}
+      
       .header-search{grid-column:1/-1;grid-row:2;height:40px}
       .nav-band{overflow-x:auto}.main-nav{width:max-content;min-height:42px;gap:18px;flex-wrap:nowrap}.main-nav a{font-size:11px;padding:12px 0}
       .hero-premium{min-height:610px;padding:70px 0 88px;background-position:58% center}
@@ -1086,6 +1086,7 @@
         })
         .then(function (data) {
           var allProducts = Array.isArray(data) ? data : [];
+          window.accProducts = allProducts;
           var featured = featuredIds.map(function (id) {
             return allProducts.find(function (product) { return String(product.id) === id; });
           }).filter(Boolean);
@@ -1116,12 +1117,13 @@
     }());
  
     (function(){
-      var cart=[],favorites=[],allProducts=[];
+      var cart=[],favorites=[],allProducts=window.accProducts||[];
       try{cart=JSON.parse(localStorage.getItem("accCart")||"[]");favorites=JSON.parse(localStorage.getItem("accFavorites")||"[]");}catch(e){cart=[];favorites=[];}
       var cartModal=document.getElementById("cartModal"),cartItems=document.getElementById("cartItems");
       function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
       function counters(){document.getElementById("cartCount").textContent=cart.length;document.getElementById("favoritesCount").textContent=favorites.length;}
       function renderCart(){
+        allProducts=window.accProducts||allProducts;
         cartItems.textContent="";
         if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
         cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
