@@ -1120,13 +1120,14 @@
       var cart=[],favorites=[],allProducts=window.accProducts||[];
       try{cart=JSON.parse(localStorage.getItem("accCart")||"[]");favorites=JSON.parse(localStorage.getItem("accFavorites")||"[]");}catch(e){cart=[];favorites=[];}
       var cartModal=document.getElementById("cartModal"),cartItems=document.getElementById("cartItems");
+      function formatCartPrice(product){var price=Number(product.price);if(!isFinite(price))return "Ціну уточнюйте";return new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price)+" грн";}
       function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
       function counters(){document.getElementById("cartCount").textContent=cart.length;document.getElementById("favoritesCount").textContent=favorites.length;}
       function renderCart(){
         allProducts=window.accProducts||allProducts;
         cartItems.textContent="";
         if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
-        cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
+        cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatCartPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
         var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
         document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot?text="+encodeURIComponent(message);
       }
