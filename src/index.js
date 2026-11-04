@@ -126,10 +126,10 @@ async function handleAccount(request, env, url) {
   return json({ error: "Not found" }, 404);
 }
 async function handleWebhook(request, env) {
-  if (env.TELEGRAM_WEBHOOK_SECRET) {
-    const supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
-    if (supplied !== env.TELEGRAM_WEBHOOK_SECRET) return new Response("Forbidden", { status: 403 });
-  }
+  // Fail closed: never accept public webhook updates without Telegram's secret header.
+  if (!env.TELEGRAM_WEBHOOK_SECRET) return new Response("Webhook secret is not configured", { status: 503 });
+  const supplied = request.headers.get("X-Telegram-Bot-Api-Secret-Token");
+  if (supplied !== env.TELEGRAM_WEBHOOK_SECRET) return new Response("Forbidden", { status: 403 });
   let update;
   try { update = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
   const message = update.message;
