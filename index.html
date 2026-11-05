@@ -636,7 +636,7 @@
 
     @media(prefers-reduced-motion:reduce){.hero-premium{background-attachment:scroll}}
 
-  </style>
+  .cart-line-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.cart-line-controls button{padding:5px 9px;border:1px solid #69715f;border-radius:4px;background:transparent;color:inherit;cursor:pointer}</style>
   <meta name="google-site-verification" content="kKhYut7UVtmoKe1Et6Yydk7NtmHyHDEHnXAXjsy-di8" />
 
   <link rel="canonical" href="https://allacontactical.com.ua/">
@@ -673,7 +673,7 @@
         <button type="submit" aria-label="Шукати">⌕</button>
       </form>
       <div class="header-tools">
-        <a class="header-tool" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener" aria-label="Особистий кабінет та консультація"><span aria-hidden="true">♙</span><small>Кабінет</small></a>
+        <a class="header-tool" href="https://allacontactical-bot.allacontactical.workers.dev/account.html" aria-label="Особистий кабінет"><span aria-hidden="true">♙</span><small>Кабінет</small></a>
         <button class="header-tool" id="favoritesToggle" type="button" aria-label="Показати обране"><span aria-hidden="true">♡</span><small>Обране <b id="favoritesCount">0</b></small></button>
         <button class="header-tool" id="cartToggle" type="button" aria-label="Відкрити кошик"><span aria-hidden="true">▢</span><small>Кошик <b id="cartCount">0</b></small></button>
         <div class="language-switcher" role="group" aria-label="Оберіть мову сайту">
@@ -1134,30 +1134,33 @@
     }());
  
     (function(){
-      var cart=[],favorites=[],allProducts=window.accProducts||[];
-      try{cart=JSON.parse(localStorage.getItem("accCart")||"[]");favorites=JSON.parse(localStorage.getItem("accFavorites")||"[]");}catch(e){cart=[];favorites=[];}
+      var API="https://allacontactical-bot.allacontactical.workers.dev",KEY="acc_account_session_v1",cart=[],favorites=[],allProducts=window.accProducts||[];
+      try{cart=JSON.parse(localStorage.getItem("accCart")||"[]");favorites=JSON.parse(localStorage.getItem("accFavorites")||"[]");if(!Array.isArray(cart))cart=[];if(!Array.isArray(favorites))favorites=[];}catch(e){cart=[];favorites=[];}
       var cartModal=document.getElementById("cartModal"),cartItems=document.getElementById("cartItems");
-      function formatCartPrice(product){var price=Number(product.price);if(!isFinite(price))return "Ціну уточнюйте";return new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price)+" грн";}
+      function formatCartPrice(product,qty){var price=Number(product.price);if(!isFinite(price))return "Ціну уточнюйте";return new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price*qty)+" грн";}
       function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
+      function quantities(){var out={};cart.forEach(function(id){var k=String(id);out[k]=Math.min(99,(out[k]||0)+1)});return out;}
+      function persist(){save();var token=localStorage.getItem(KEY);if(!token)return;fetch(API+"/account/cart",{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({cart:quantities()})}).catch(function(){});}
       function counters(){document.getElementById("cartCount").textContent=cart.length;document.getElementById("favoritesCount").textContent=favorites.length;}
       function renderCart(){
-        allProducts=window.accProducts||allProducts;
-        cartItems.textContent="";
-        if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
-        cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatCartPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
-        var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
+        allProducts=window.accProducts||allProducts;cartItems.textContent="";
+        var q=quantities(),entries=Object.keys(q);
+        if(!entries.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
+        entries.forEach(function(id){var product=allProducts.find(function(x){return String(x.id)===id;});if(!product)return;var qty=q[id],line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=product.title+" × "+qty;var price=document.createElement("strong");price.textContent=formatCartPrice(product,qty);line.append(name,price);
+          var controls=document.createElement("div");controls.className="cart-line-controls";
+          [["−",-1],["+",1],["Видалити",0]].forEach(function(pair){var b=document.createElement("button");b.type="button";b.textContent=pair[0];b.addEventListener("click",function(){var next=cart.filter(function(x){return String(x)!==id});if(pair[1]===1)next.push(id);else if(pair[1]===-1){var removed=false;next=cart.filter(function(x){if(String(x)===id&&!removed){removed=true;return false}return true})}cart=next;persist();counters();renderCart()});controls.appendChild(b)});line.appendChild(controls);cartItems.appendChild(line);
+        });
+        var message="Вітаю! Хочу уточнити наявність і замовити:\n"+entries.map(function(id){var p=allProducts.find(function(x){return String(x.id)===id;});return p?p.title+" — "+q[id]+" шт.":""}).filter(Boolean).join("\n");
         document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot?text="+encodeURIComponent(message);
       }
       document.getElementById("cartToggle").addEventListener("click",function(){renderCart();cartModal.classList.add("is-open");cartModal.setAttribute("aria-hidden","false");});
       document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
       cartModal.addEventListener("click",function(e){if(e.target===cartModal){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");}});
-      document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var id=card.querySelector("[data-favorite-id]").getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;});this.setAttribute("aria-pressed",only?"true":"false");});
-      grid.addEventListener("click",function(e){
-        var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");
-        if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"♥ Обране":"♡ Обране";save();counters();}
-        if(c){var cid=c.getAttribute("data-cart-id");if(cart.indexOf(cid)<0){cart.push(cid);c.classList.add("is-active");c.textContent="✓ Додано";save();counters();}}
-      });
+      document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var el=card.querySelector("[data-favorite-id]");if(el){var id=el.getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;}});this.setAttribute("aria-pressed",only?"true":"false");});
+      grid.addEventListener("click",function(e){var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"♥ Обране":"♡ Обране";save();counters();}if(c){cart.push(c.getAttribute("data-cart-id"));persist();c.classList.add("is-active");c.textContent="✓ Додано";counters();}});
       counters();
+      var token=localStorage.getItem(KEY);
+      if(token){fetch(API+"/account/cart",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(function(r){if(!r.ok)throw new Error();return r.json()}).then(function(d){var remote=d.cart||{},flat=[];Object.keys(remote).forEach(function(id){for(var i=0;i<Math.min(99,Number(remote[id])||0);i++)flat.push(id)});if(flat.length){cart=flat;save();counters();}}).catch(function(){});}
       var headerSearch=document.querySelector(".header-search");
       headerSearch.addEventListener("submit",function(e){var input=headerSearch.querySelector("input");if(!input.value.trim())e.preventDefault();});
     }());
