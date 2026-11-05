@@ -222,7 +222,8 @@ export default {
       assetUrl.pathname=(url.pathname==="/panel" || url.pathname==="/panel/")?"/index.html":url.pathname.slice("/panel".length);
       return env.ASSETS.fetch(new Request(assetUrl,request));
     }
-    if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});\n    if (url.pathname==="/public/products" && request.method==="GET") { try { return withCors(json({products:await publicProducts(env)}),request); } catch { return withCors(json({error:"Catalog temporarily unavailable"},503),request); } }
+    if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});
+    if (url.pathname==="/public/products" && request.method==="GET") { try { return withCors(json({products:await publicProducts(env)}),request); } catch { return withCors(json({error:"Catalog temporarily unavailable"},503),request); } }
     if (url.pathname.startsWith("/media/") && request.method==="GET") return handleMedia(request,env,url.pathname.split("/").pop());
     if (!url.pathname.startsWith("/admin")) return withCors(json({error:"Not found"},404),request);
     if (!await verifyAdmin(request,env)) return withCors(json({error:"Unauthorized"},401),request);
