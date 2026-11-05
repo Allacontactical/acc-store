@@ -17,7 +17,7 @@ function corsHeaders(request) {
   const allowed = origin && (SITE_ORIGINS.has(origin));
   return {
     "Access-Control-Allow-Origin": allowed ? origin : "https://allacontactical.com.ua",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
@@ -111,6 +111,37 @@ async function handleAccount(request, env, url) {
   if (!env.DB) return json({ error: "D1 binding DB is not configured" }, 503);
   const user = await authenticatedUser(request, env);
   if (!user) return json({ error: "Unauthorized" }, 401);
+  if (url.pathname === "/account/cart" && request.method === "GET") {
+    const row = await env.DB.prepare("SELECT items_json, updated_at FROM user_carts WHERE user_id = ?").bind(user.id).first();
+    let cart = {};
+    try { cart = row?.items_json ? JSON.parse(row.items_json) : {}; } catch { cart = {}; }
+    return json({ cart, updated_at: row?.updated_at || null });
+  }
+  if (url.pathname === "/account/cart" && request.method === "PUT") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const input = payload?.cart;
+    if (!input || typeof input !== "object" || Array.isArray(input)) return json({ error: "Cart must be an object" }, 400);
+    const entries = Object.entries(input);
+    if (entries.length > 100) return json({ error: "Cart contains too many products" }, 400);
+    const cart = {};
+    for (const [productId, quantity] of entries) {
+      if (!/^\\d{1,20}$/.test(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+        return json({ error: "Invalid cart item" }, 400);
+      }
+      cart[productId] = quantity;
+    }
+    const serialized = JSON.stringify(cart);
+    if (serialized.length > 12000) return json({ error: "Cart is too large" }, 413);
+    await env.DB.prepare(
+      `INSERT INTO user_carts (user_id, items_json, updated_at)
+       VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+       ON CONFLICT(user_id) DO UPDATE SET
+         items_json = excluded.items_json,
+         updated_at = excluded.updated_at`
+    ).bind(user.id, serialized).run();
+    return json({ ok: true, cart });
+  }
   if (url.pathname === "/account/me" && request.method === "GET") {
     return json({ user: {
       id: user.id,
