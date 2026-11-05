@@ -81,7 +81,7 @@ async function listProducts(env,url) {
   const products = [];
   for (const p of rows.results||[]) {
     const imgs = await env.DB.prepare("SELECT id,sort_order FROM acc_admin_product_images WHERE product_id=? ORDER BY sort_order,id").bind(p.id).all();
-    products.push({...p,images:(imgs.results||[]).map(x=>({id:x.id,url:"/media/"+x.id,sort_order:x.sort_order}))});
+    products.push({...p,images:(imgs.results||[]).map(x=>({id:x.id,url:"/admin/media/"+x.id,sort_order:x.sort_order}))});
   }
   return products;
 }
@@ -190,7 +190,8 @@ async function handleAdminMedia(env,id) {
   if (!obj) return new Response("Not found",{status:404});
   return new Response(obj.body,{headers:{"Content-Type":row.content_type,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
 }
-\nexport default {
+
+export default {
   async fetch(request,env) {
     const url=new URL(request.url);
     if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});
