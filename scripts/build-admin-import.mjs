@@ -36,7 +36,7 @@ for (const p of products) {
     "INSERT INTO acc_admin_products " +
     "(id,title,price,currency,category,description,description_ru,status,source,source_product_id,source_url,legacy_json) VALUES (" +
     fields.map(sql).join(",") +
-    ") ON CONFLICT(source_product_id) DO UPDATE SET " +
+    ") ON CONFLICT(source_product_id) WHERE source_product_id IS NOT NULL AND source_product_id <> '' DO UPDATE SET " +
     "title=excluded.title,price=excluded.price,currency=excluded.currency,category=excluded.category," +
     "description=excluded.description,description_ru=excluded.description_ru,status='active'," +
     "source='static',source_url=excluded.source_url,legacy_json=excluded.legacy_json," +
