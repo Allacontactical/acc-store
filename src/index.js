@@ -239,7 +239,10 @@ export default {
 
     const cors = corsHeaders(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (request.method === "GET" && url.pathname === "/") return withCors(new Response("AllaconTactical bot is ready."), request);
+    if (request.method === "GET" && url.pathname === "/" && env.ASSETS) {
+      const assetUrl = new URL("/index.html", request.url);
+      return env.ASSETS.fetch(new Request(assetUrl, request));
+    }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
     if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
