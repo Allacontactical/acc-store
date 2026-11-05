@@ -160,7 +160,15 @@ async function handleMedia(request,env,id) {
   if (!obj) return new Response("Not found",{status:404});
   return new Response(obj.body,{headers:{"Content-Type":row.content_type,"Cache-Control":"public, max-age=86400","X-Content-Type-Options":"nosniff"}});
 }
-export default {
+
+async function handleAdminMedia(env,id) {
+  const row=await env.DB.prepare("SELECT i.object_key,i.content_type FROM acc_admin_product_images i WHERE i.id=?").bind(id).first();
+  if (!row) return new Response("Not found",{status:404});
+  const obj=await env.PRODUCT_IMAGES.get(row.object_key);
+  if (!obj) return new Response("Not found",{status:404});
+  return new Response(obj.body,{headers:{"Content-Type":row.content_type,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
+}
+\nexport default {
   async fetch(request,env) {
     const url=new URL(request.url);
     if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});
