@@ -49,18 +49,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
-      - name: Verify production account and API routes
+      - name: Verify production account redirect
         shell: bash
         run: |
           base="https://allacontactical-bot.allacontactical.workers.dev"
-          for path in account.html; do
-            code=$(curl --fail --silent --show-error -o "/tmp/$path" -w '%{http_code}' "$base/$path")
-            test "$code" = "200"
-            grep -q 'loginButton' "/tmp/$path"
-            grep -q 'cart-row-controls' "/tmp/$path"
-            grep -q 'Видалити' "/tmp/$path"
-          done
-          echo "Production account page is available and includes cart controls."
+          code=$(curl --silent --show-error -D /tmp/acc-account-headers.txt -o /dev/null -w '%{http_code}' "$base/account.html")
+          test "$code" = "302"
+          grep -qi '^location: https://allacontactical.com.ua/account.html' /tmp/acc-account-headers.txt
+          echo "Worker redirects customers to the same-origin account page."
       - name: Set production Telegram webhook
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
