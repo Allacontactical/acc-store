@@ -109,32 +109,32 @@ function parsePromCSV(text){
   if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}else if(ch==='"')quoted=false;else field+=ch;continue;}
   if(ch==='"'){quoted=true;continue;}
   if(ch===","){row.push(field);field="";continue;}
-  if(ch==="\\r"||ch==="\\n"){if(ch==="\\r"&&text[i+1]==="\\n")i++;row.push(field);field="";if(row.some(x=>x!==""))rows.push(row);row=[];continue;}
+  if(ch==="\r"||ch==="\n"){if(ch==="\r"&&text[i+1]==="\n")i++;row.push(field);field="";if(row.some(x=>x!==""))rows.push(row);row=[];continue;}
   field+=ch;
  }
  if(field!==""||row.length){row.push(field);rows.push(row);}
  return rows;
 }
 function promPlainText(value){
- return String(value||"").replace(/<br\\s*\\/?\\s*>/gi,"\\n").replace(/<\\/p\\s*>/gi,"\\n\\n").replace(/<[^>]*>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&ndash;/gi,"–").replace(/&mdash;/gi,"—").trim();
+ return String(value||"").replace(/<br\s*\/?\s*>/gi,"\n").replace(/<\/p\s*>/gi,"\n\n").replace(/<[^>]*>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&ndash;/gi,"–").replace(/&mdash;/gi,"—").trim();
 }
 function promRowsFromCSV(text){
  const rows=parsePromCSV(text);if(rows.length<2)throw new Error("CSV не містить рядків товарів.");
- const headers=rows[0].map(x=>String(x||"").replace(/^\\uFEFF/,"").trim());
+ const headers=rows[0].map(x=>String(x||"").replace(/^\uFEFF/,"").trim());
  const idx=name=>headers.indexOf(name);
  const get=(row,name)=>{const n=idx(name);return n<0?"":String(row[n]??"").trim();};
  const items=[];let skipped=0;
  for(const row of rows.slice(1)){
   const url=get(row,"Продукт_на_сайті");
   const idValue=get(row,"Ідентифікатор_товару")||get(row,"Унікальний_ідентифікатор")||get(row,"Код_товару");
-  const fromUrl=(url.match(/\\/p(\\d{5,20})[-./]/i)||[])[1]||"";
-  const sourceId=(idValue.match(/\\d{1,20}/)||[])[0]||fromUrl;
+  const fromUrl=(url.match(/\/p(\d{5,20})[-./]/i)||[])[1]||"";
+  const sourceId=(idValue.match(/\d{1,20}/)||[])[0]||fromUrl;
   const title=get(row,"Назва_позиції_укр")||get(row,"Назва_позиції");
   if(!sourceId||!title){skipped++;continue;}
-  const rawPrice=get(row,"Ціна").replace(/\\s/g,"").replace(",",".");
+  const rawPrice=get(row,"Ціна").replace(/\s/g,"").replace(",",".");
   const price=rawPrice&&Number.isFinite(Number(rawPrice))?Number(rawPrice):null;
   const imageCell=get(row,"Посилання_зображення");
-  const images=(imageCell.match(/https?:\\/\\/[^\\s;,|]+/gi)||[]).slice(0,10);
+  const images=(imageCell.match(/https?:\/\/[^\s;,|]+/gi)||[]).slice(0,10);
   items.push({
    source_product_id:sourceId,title:title.slice(0,250),price,currency:get(row,"Валюта")||"UAH",
    category:get(row,"Назва_групи"),description:promPlainText(get(row,"Опис_укр")||get(row,"Опис")),
