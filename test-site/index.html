@@ -596,6 +596,12 @@
     .cart-panel{width:min(520px,100%);max-height:82vh;overflow:auto;background:#20251d;border:1px solid #6b735d;padding:24px;border-radius:6px}
     .cart-panel h2{margin-top:0}
     .cart-line{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #3b4434;font-size:14px}
+    .cart-line-details{display:grid;gap:4px;min-width:0}.cart-line-details span{color:#b9bdb2;font-size:12px}
+    .cart-line-controls{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+    .cart-action{min-height:32px;padding:5px 9px;border:1px solid #69715f;border-radius:3px;background:transparent;color:#f4f2eb;cursor:pointer}
+    .cart-action:hover{border-color:#c17d3f;color:#f5a044}.cart-action[data-cart-action="remove"]{font-size:11px}
+    @media(max-width:520px){.cart-line{display:grid;grid-template-columns:1fr;gap:8px}.cart-line-controls{justify-content:flex-start}}
+
     .cart-close{float:right;border:0;background:none;color:#f4f2eb;font-size:25px;cursor:pointer}
     .cart-empty{color:#b9bdb2}
     @media(max-width:980px){.header-main{grid-template-columns:1fr auto;gap:12px}.header-search{grid-column:1/-1;grid-row:2}.header-tools{gap:9px}.main-nav{justify-content:flex-start;column-gap:18px}}
@@ -1171,12 +1177,36 @@
           return true;
         }catch(_){accountCartCount=null;counters();return false;}
       }
+      function changeCartItem(id,action){
+        var current=cart.filter(function(item){return String(item)===String(id);});
+        if(action==="remove")cart=cart.filter(function(item){return String(item)!==String(id);});
+        else if(action==="minus"){var removed=false;cart=cart.filter(function(item){if(!removed&&String(item)===String(id)){removed=true;return false;}return true;});}
+        else if(action==="plus"&&current.length<99)cart.push(String(id));
+        save();accountCartCount=cart.length;counters();renderCart();saveAccountCart();
+      }
       function renderCart(){
         allProducts=window.accProducts||allProducts;
         cartItems.textContent="";
-        if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot";return;}
-        cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatCartPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
-        var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
+        var quantities=cart.reduce(function(map,id){map[String(id)]=(map[String(id)]||0)+1;return map;},{});
+        var ids=Object.keys(quantities);
+        if(!ids.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot";return;}
+        var checkoutLines=[];
+        ids.forEach(function(id){
+          var product=allProducts.find(function(x){return String(x.id)===id;});
+          if(!product)return;
+          var qty=quantities[id],line=document.createElement("div");line.className="cart-line";
+          var details=document.createElement("div");details.className="cart-line-details";
+          var name=document.createElement("strong");name.textContent=product.title;
+          var price=document.createElement("span");price.textContent=formatCartPrice(product)+" · "+qty+" шт.";
+          details.append(name,price);
+          var controls=document.createElement("div");controls.className="cart-line-controls";
+          [["minus","−"],["plus","+"],["remove","Видалити"]].forEach(function(entry){
+            var button=document.createElement("button");button.type="button";button.className="cart-action";button.textContent=entry[1];button.setAttribute("data-cart-action",entry[0]);button.setAttribute("data-cart-product",id);button.setAttribute("aria-label",entry[0]==="remove"?"Видалити товар":entry[0]==="minus"?"Зменшити кількість":"Збільшити кількість");controls.appendChild(button);
+          });
+          line.append(details,controls);cartItems.appendChild(line);
+          checkoutLines.push(product.title+" — "+qty+" шт.");
+        });
+        var message="Вітаю! Хочу уточнити наявність і замовити:\n"+checkoutLines.join("\n");
         document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot?text="+encodeURIComponent(message);
       }
       async function openCart(){
@@ -1201,6 +1231,10 @@
       }
       document.getElementById("cartToggle").addEventListener("click",openCart);
       document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
+      cartItems.addEventListener("click",function(event){
+        var button=event.target.closest("[data-cart-action]");
+        if(button)changeCartItem(button.getAttribute("data-cart-product"),button.getAttribute("data-cart-action"));
+      });
       cartModal.addEventListener("click",function(e){if(e.target===cartModal){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");}});
       document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var id=card.querySelector("[data-favorite-id]").getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;});this.setAttribute("aria-pressed",only?"true":"false");});
       grid.addEventListener("click",function(e){
