@@ -56,3 +56,16 @@ for (const group of groups) console.log(group.file + ": " + group.matched.length
 console.log("Coverage: every product appears in at least one category group");
 console.log("Account checks: Telegram auth, profile, add-to-cart and server persistence code present");
 console.log("Homepage checks: add-to-cart and account cart synchronization code present");
+for (const file of pages) {
+  const html = fs.readFileSync("test-site/" + file, "utf8");
+  for (const [needle, label] of [
+    ["data-category-cart-id", "category add-to-cart button"],
+    ["addCategoryProductToCart", "category cart action"],
+    ['fetch("/account/cart"', "category server cart integration"],
+    ['method:"PUT"', "category cart persistence"]
+  ]) {
+    if (!html.includes(needle)) throw new Error(file + ": missing " + label);
+  }
+}
+console.log("Category cards: add-to-cart button and server cart integration present on all six groups");
+
