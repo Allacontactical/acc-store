@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ACC — керування каталогом</title>
+<style>
+:root{color-scheme:dark;--bg:#171b16;--panel:#23291f;--olive:#3b4930;--orange:#f28c28;--text:#f4f2eb;--muted:#b9bdb2;--line:#46503d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Arial,sans-serif}.wrap{width:min(1180px,94%);margin:auto}header{background:#20251d;border-bottom:1px solid var(--line);padding:18px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:21px;font-weight:900;letter-spacing:1px}.brand span{color:var(--orange)}main{padding:26px 0 60px}h1{margin:0;font-size:28px}.muted{color:var(--muted)}.toolbar,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin:18px 0}.toolbar{display:flex;gap:10px;flex-wrap:wrap}.toolbar input{flex:1;min-width:220px}input,select,textarea{width:100%;padding:11px;border:1px solid #69715f;border-radius:5px;background:#171b16;color:var(--text);font:inherit}label{display:block;color:var(--muted);font-size:13px;font-weight:bold;margin:10px 0 5px}.btn{border:1px solid var(--orange);border-radius:5px;background:var(--orange);color:#171b16;padding:10px 14px;font-weight:bold;cursor:pointer}.btn.secondary{background:transparent;color:var(--text);border-color:#69715f}.btn.danger{background:#7a3027;border-color:#a94b3e;color:white}.products{display:grid;gap:10px}.item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.item h3{margin:0 0 4px;font-size:16px}.item p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:7px;flex-wrap:wrap}.status{color:var(--orange)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.wide{grid-column:1/-1}.hidden{display:none!important}.photos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.photos img{width:90px;height:90px;object-fit:contain;background:#f4f3ef;border-radius:5px}.notice{padding:12px;border-left:3px solid var(--orange);background:#2b3026;color:var(--muted);margin:14px 0}#message{min-height:24px;color:var(--orange)}@media(max-width:650px){.item{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style>
+<script src="./config.js"></script>
+<script defer src="./admin.js"></script>
+</head>
+<body>
+<header><div class="wrap top"><div class="brand">ALLACON<span>TACTICAL</span></div><div class="muted">Закрита панель керування</div></div></header>
+<main class="wrap">
+<h1>Каталог товарів</h1>
+<p class="muted">Додавання, редагування, фотографії, статуси та архів. Нові імпортовані товари мають проходити перевірку перед публікацією.</p>
+<div class="notice">Доступ до даних відкривається лише після налаштування Cloudflare Access. Ця сторінка сама по собі не надає права керування.</div>
+<div class="toolbar">
+<input id="search" type="search" placeholder="Пошук за назвою, категорією або ID">
+<select id="filter"><option value="">Усі статуси</option><option value="active">В наявності</option><option value="expected">Очікується</option><option value="out_of_stock">Немає в наявності</option><option value="review">На перевірці</option><option value="archived">Архів</option></select>
+<button class="btn" id="newProduct">＋ Додати товар</button>
+</div>
+<div id="message" role="status" aria-live="polite"></div>
+<section id="editor" class="panel hidden">
+<div class="top"><h2 id="editorTitle">Новий товар</h2><button class="btn secondary" id="closeEditor" type="button">Закрити</button></div>
+<form id="productForm">
+<div class="formgrid">
+<div class="wide"><label for="title">Назва товару *</label><input id="title" maxlength="250" required></div>
+<div><label for="price">Ціна, грн</label><input id="price" type="number" min="0" step="1"></div>
+<div><label for="status">Статус</label><select id="status"><option value="review">На перевірці</option><option value="active">В наявності</option><option value="expected">Очікується</option><option value="out_of_stock">Немає в наявності</option></select></div>
+<div class="wide"><label for="category">Категорія</label><input id="category" maxlength="180"></div>
+<div class="wide"><label for="description">Опис українською</label><textarea id="description" rows="5" maxlength="12000"></textarea></div>
+<div class="wide"><label for="descriptionRu">Опис російською</label><textarea id="descriptionRu" rows="5" maxlength="12000"></textarea></div>
+</div>
+<div class="actions" style="margin-top:14px"><button class="btn" type="submit">Зберегти товар</button><button class="btn secondary" id="cancelEdit" type="button">Скасувати</button></div>
+</form>
+<div id="photoSection" class="hidden">
+<h3>Фотографії товару</h3>
+<p class="muted">Виберіть до 10 фото з комп’ютера. Панель конвертує їх у WebP перед завантаженням.</p>
+<input id="photoFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+<div id="photos" class="photos"></div>
+</div>
+</section>
+<section id="products" class="products"><p class="muted">Завантаження каталогу…</p></section>
+</main>
+</body>
+</html>
