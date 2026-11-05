@@ -16,6 +16,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: test/telegram-bot
+      - name: Generate webhook secret
+        id: webhook-secret
+        shell: bash
+        run: |
+          secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$secret"
+          echo "secret=$secret" >> "$GITHUB_OUTPUT"
       - name: Deploy test Worker
         uses: cloudflare/wrangler-action@v4
         with:
@@ -27,7 +34,7 @@ jobs:
             TELEGRAM_WEBHOOK_SECRET
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
           TELEGRAM_BOT_USERNAME: AllaconTacticalTest_bot
       - name: Apply test D1 migration
         env:
@@ -37,7 +44,7 @@ jobs:
       - name: Set test Telegram webhook
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
         run: |
           response=$(curl --fail-with-body --silent --show-error \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
