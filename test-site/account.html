@@ -74,7 +74,7 @@
         <h2 id="cabinetCartTitle">Мій кошик <span id="cabinetCartCount">(0)</span></h2>
         <div id="cabinetCartItems"><p class="hint">Кошик поки порожній.</p></div>
         <div class="cart-total"><span>Разом</span><strong id="cabinetCartTotal">0 грн</strong></div>
-        <a id="cabinetCheckout" class="button" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Узгодити замовлення в Telegram</a>
+        <a id="cabinetCheckout" class="button" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">Узгодити замовлення в Telegram</a>
       </section>
 
       <div class="actions"><button id="logoutButton" class="secondary" type="button">Вийти</button><a class="button" href="https://allacontactical.com.ua/catalog.html">Перейти до каталогу</a></div>
@@ -194,7 +194,7 @@
     entries.forEach(([id,qty])=>{const product=cabinetProducts.find(p=>String(p.id)===id);const row=document.createElement("div");row.className="cart-row";const name=document.createElement("span");name.textContent=product.title+" × "+qty;const price=document.createElement("strong");const amount=Number(product.price);if(Number.isFinite(amount)&&amount>0){total+=amount*Number(qty);price.textContent=money(amount*Number(qty));}else price.textContent="Ціну уточнюйте";const remove=document.createElement("button");remove.type="button";remove.className="cart-remove";remove.textContent="Видалити";remove.addEventListener("click",()=>{const next={...readCabinetCart()};delete next[id];writeCabinetCart(next);});row.append(name,price,remove);box.appendChild(row);});
     $("cabinetCartTotal").textContent=money(total);
     const message="Вітаю! Хочу уточнити наявність і замовити:\n"+entries.map(([id,qty])=>{const p=cabinetProducts.find(x=>String(x.id)===id);return p?p.title+" — "+qty+" шт.":"";}).filter(Boolean).join("\n");
-    $("cabinetCheckout").href=entries.length?"https://t.me/Allacontactical_bot?text="+encodeURIComponent(message):"https://t.me/Allacontactical_bot";
+    $("cabinetCheckout").href=entries.length?"https://t.me/AllaconTacticalTest_bot?text="+encodeURIComponent(message):"https://t.me/AllaconTacticalTest_bot";
   }
   function renderCabinetCatalog(){
     const q=$("cabinetSearch").value.trim().toLocaleLowerCase("uk-UA"), category=$("cabinetCategory").value;
