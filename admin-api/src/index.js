@@ -92,7 +92,7 @@ async function publicProducts(env) {
     let legacy={}; try { legacy=JSON.parse(p.legacy_json||"{}"); } catch {}
     const uploaded=await env.DB.prepare("SELECT id,sort_order FROM acc_admin_product_images WHERE product_id=? ORDER BY sort_order,id").bind(p.id).all();
     const oldImages=Array.isArray(legacy.images)?legacy.images.filter(x=>typeof x==="string"&&/^https:\/\//i.test(x)):[];
-    const newImages=(uploaded.results||[]).map(x=>"/media/"+x.id);
+    const newImages=(uploaded.results||[]).map(x=>"https://admin.allacontactical.com.ua/media/"+x.id);
     const images=[...oldImages,...newImages];
     output.push({
       id:(p.source_product_id||p.id),admin_id:p.id,title:p.title,price:p.price,currency:p.currency||"UAH",category:p.category||"",
