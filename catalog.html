@@ -175,6 +175,7 @@ var d=desc(p);if(d){var preview=document.createElement("p");preview.className="d
 var pr=document.createElement("p");pr.className="price";pr.textContent=Number.isFinite(price(p))?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price(p))+" грн":"Ціну уточнюйте";body.appendChild(pr);
 var av=document.createElement("p");av.className="availability";av.textContent=p.availability||"Уточнюйте актуальну наявність перед замовленням";body.appendChild(av);
 var buy=document.createElement("button");buy.type="button";buy.className="buy order-button";buy.textContent="Оформити замовлення";buy.setAttribute("data-order-product",p.title||"Товар AllaconTactical");body.appendChild(buy);
+var addToCart=document.createElement("button");addToCart.type="button";addToCart.className="buy order-button";addToCart.textContent="+ До кошика";addToCart.setAttribute("data-cart-id",String(p.id));body.appendChild(addToCart);
 var prom=document.createElement("a");prom.className="buy-secondary";prom.href=p.url||"https://allacontactical.prom.ua/";prom.target="_blank";prom.rel="noopener";prom.textContent="Детальніше на Prom.ua →";body.appendChild(prom);
 var contact=document.createElement("div");contact.className="contact-actions";var tg=document.createElement("a");tg.href="https://t.me/Allacontactical_bot";tg.target="_blank";tg.rel="noopener";tg.textContent="Замовити в Telegram";contact.appendChild(tg);var call=document.createElement("a");call.href="tel:+380667412693";call.textContent="Зателефонувати";contact.appendChild(call);body.appendChild(contact);
 card.appendChild(body);frag.appendChild(card);
@@ -206,5 +207,6 @@ search.addEventListener("input",render);category.addEventListener("change",rende
 fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog fetch failed");return r.json();}).then(function(data){all=Array.isArray(data)?data:[];var cats=Array.from(new Set(all.map(function(p){return p.category;}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,"uk");});cats.forEach(function(name){var o=document.createElement("option");o.value=name;o.textContent=name;category.appendChild(o);});render();}).catch(function(){grid.textContent="";var e=document.createElement("p");e.className="empty";e.textContent="Не вдалося завантажити каталог. Оновіть сторінку трохи пізніше.";grid.appendChild(e);count.textContent="Каталог тимчасово недоступний";});
 })();
 </script>
+<script src="./cart.js" defer></script>
 </body>
 </html>

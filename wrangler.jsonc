@@ -3,5 +3,12 @@
   "name": "allacontactical-bot",
   "main": "src/index.js",
   "compatibility_date": "2026-10-16",
-  "workers_dev": true
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "acc-catalog-db",
+      "database_id": "506eb009-1462-4ff6-a781-1404e9aecf59"
+    }
+  ]
 }
