@@ -22,6 +22,17 @@
 <select id="filter"><option value="">Усі статуси</option><option value="active">В наявності</option><option value="expected">Очікується</option><option value="out_of_stock">Немає в наявності</option><option value="review">На перевірці</option><option value="archived">Архів</option></select>
 <button class="btn" id="newProduct">＋ Додати товар</button>
 </div>
+<section class="panel">
+  <h2>Імпорт товарів з Prom.ua</h2>
+  <p class="muted">Завантажте CSV-експорт. Усі рядки спочатку потраплять у чергу перевірки й не опублікуються автоматично.</p>
+  <div class="toolbar">
+    <input id="promFile" type="file" accept=".csv,text/csv">
+    <button class="btn" id="stagePromImport" type="button">Перевірити та додати в чергу</button>
+  </div>
+  <div id="promImportStatus" class="muted" role="status" aria-live="polite"></div>
+  <h3>Черга перевірки Prom</h3>
+  <div id="promReviewItems" class="products"><p class="muted">Завантаження черги…</p></div>
+</section>
 <div id="message" role="status" aria-live="polite"></div>
 <section id="editor" class="panel hidden">
 <div class="top"><h2 id="editorTitle">Новий товар</h2><button class="btn secondary" id="closeEditor" type="button">Закрити</button></div>
