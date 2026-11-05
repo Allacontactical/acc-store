@@ -102,6 +102,28 @@ async function handleAdmin(request,env,url,email) {
     await audit(env,email,"product_create",id);
     return json({id},201);
   }
+  const imageDelete=path.match(/^products\/([0-9a-f-]{36})\/images\/([0-9a-f-]{36})$/i);
+  if (imageDelete && request.method==="DELETE") {
+    const productId=imageDelete[1], imageId=imageDelete[2];
+    const image=await env.DB.prepare("SELECT object_key FROM acc_admin_product_images WHERE id=? AND product_id=?").bind(imageId,productId).first();
+    if (!image) return json({error:"Image not found"},404);
+    await env.DB.prepare("DELETE FROM acc_admin_product_images WHERE id=? AND product_id=?").bind(imageId,productId).run();
+    await env.PRODUCT_IMAGES.delete(image.object_key);
+    await audit(env,email,"image_delete",productId,{imageId});
+    return json({ok:true});
+  }
+  const imageOrder=path.match(/^products\/([0-9a-f-]{36})\/images$/i);
+  if (imageOrder && request.method==="PATCH") {
+    const productId=imageOrder[1]; let body;
+    try { body=await request.json(); } catch { return json({error:"Invalid JSON"},400); }
+    if (!Array.isArray(body.order) || body.order.length>10 || new Set(body.order).size!==body.order.length || body.order.some(x=>typeof x!=="string")) return json({error:"Invalid image order"},400);
+    const existing=await env.DB.prepare("SELECT id FROM acc_admin_product_images WHERE product_id=?").bind(productId).all();
+    const ids=(existing.results||[]).map(x=>x.id);
+    if (ids.length!==body.order.length || ids.some(x=>!body.order.includes(x))) return json({error:"Image order must include every current photo exactly once"},400);
+    for (let n=0;n<body.order.length;n++) await env.DB.prepare("UPDATE acc_admin_product_images SET sort_order=? WHERE id=? AND product_id=?").bind(n,body.order[n],productId).run();
+    await audit(env,email,"image_reorder",productId,{order:body.order});
+    return json({ok:true});
+  }
   const match=path.match(/^products\/([0-9a-f-]{36})(?:\/(images|restore))?$/i);
   if (match) {
     const id=match[1], action=match[2]||"";
