@@ -30,6 +30,7 @@ jobs:
           sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0001_admin_schema.sql
           sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0002_legacy_product_payload.sql
           sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0003_unique_source_product_id.sql
+          sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0004_prom_import_moderation.sql
           node scripts/build-admin-import.mjs products.json /tmp/acc-admin-import.sql
           sqlite3 /tmp/acc-admin-test.db < /tmp/acc-admin-import.sql
           test "$(sqlite3 /tmp/acc-admin-test.db 'SELECT COUNT(*) FROM acc_admin_products;')" -gt 0
