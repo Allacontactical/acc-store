@@ -58,7 +58,7 @@ console.log("Account checks: Telegram auth, profile, add-to-cart and server pers
 console.log("Homepage checks: add-to-cart and account cart synchronization code present");
 for (const file of pages) {
   const html = fs.readFileSync("test-site/" + file, "utf8");
-  for (const match of html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)) new vm.Script(match[1], { filename: file });
+  for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(match[1], { filename: file });
   for (const [needle, label] of [
     ["categoryCartCount", "category navigation cart counter"],
     ["updateCategoryCartCount", "category cart counter refresh"],
