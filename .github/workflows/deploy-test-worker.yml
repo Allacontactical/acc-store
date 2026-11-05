@@ -42,8 +42,8 @@ jobs:
           TELEGRAM_BOT_USERNAME: AllaconTacticalTest_bot
       - name: Verify test account page
         run: |
-          curl --retry 5 --retry-delay 2 --retry-all-errors --fail --silent --show-error \\
-            https://allacontactical-bot-test.allacontactical.workers.dev/account.html \\
+          curl --retry 5 --retry-delay 2 --retry-all-errors --fail --silent --show-error \
+            https://allacontactical-bot-test.allacontactical.workers.dev/account.html \
             -o /tmp/acc-account.html
           grep -q 'Особистий кабінет' /tmp/acc-account.html
       - name: Apply test D1 migration
