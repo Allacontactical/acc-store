@@ -1154,10 +1154,10 @@
       }
       async function refreshAccountCartCount(){
         var token=localStorage.getItem("acc_account_session_v1");
-        if(!token){accountCartCount=null;counters();return;}
+        if(!token){accountCartCount=null;counters();return false;}
         try{
           var response=await fetch("/account/cart",{method:"GET",headers:{"Authorization":"Bearer "+token},cache:"no-store"});
-          if(!response.ok)throw new Error("Cart unavailable");
+          if(!response.ok)throw new Error("HTTP "+response.status);
           var data=await response.json(),items=data.cart&&typeof data.cart==="object"?data.cart:{};
           var local=cartObject(),merged={};
           Object.keys(items).forEach(function(id){var qty=Number(items[id]);if(/^\d{1,20}$/.test(id)&&Number.isInteger(qty)&&qty>0)merged[id]=Math.min(99,qty);});
@@ -1168,7 +1168,8 @@
           counters();
           renderCart();
           if(JSON.stringify(merged)!==JSON.stringify(items))saveAccountCart();
-        }catch(_){accountCartCount=null;counters();}
+          return true;
+        }catch(_){accountCartCount=null;counters();return false;}
       }
       function renderCart(){
         allProducts=window.accProducts||allProducts;
@@ -1178,7 +1179,27 @@
         var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
         document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot?text="+encodeURIComponent(message);
       }
-      document.getElementById("cartToggle").addEventListener("click",function(){renderCart();cartModal.classList.add("is-open");cartModal.setAttribute("aria-hidden","false");});
+      async function openCart(){
+        var synced=await refreshAccountCartCount();
+        if(!window.accProducts||!window.accProducts.length){
+          try{
+            var response=await fetch("https://allacontactical.com.ua/products.json?v=20261105",{cache:"no-store"});
+            if(response.ok){var products=await response.json();window.accProducts=Array.isArray(products)?products:[];}
+          }catch(_){}
+        }
+        renderCart();
+        if(!synced&&!cart.length){
+          var note=document.createElement("p");note.className="cart-empty";
+          note.textContent="Не вдалося завантажити кошик акаунта. Перевірте вхід до кабінету та відкрийте кошик ще раз.";
+          cartItems.textContent="";cartItems.appendChild(note);
+        }else if(cart.length&&!cartItems.querySelector(".cart-line")){
+          var missing=document.createElement("p");missing.className="cart-empty";
+          missing.textContent="Товари збережені, але каталог поки не завантажився. Спробуйте відкрити кошик ще раз.";
+          cartItems.appendChild(missing);
+        }
+        cartModal.classList.add("is-open");cartModal.setAttribute("aria-hidden","false");
+      }
+      document.getElementById("cartToggle").addEventListener("click",openCart);
       document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
       cartModal.addEventListener("click",function(e){if(e.target===cartModal){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");}});
       document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var id=card.querySelector("[data-favorite-id]").getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;});this.setAttribute("aria-pressed",only?"true":"false");});
