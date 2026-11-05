@@ -1,0 +1,52 @@
+name: Verify production cart integration
+
+on:
+  push:
+    branches:
+      - feature/production-cart-integration
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check Worker JavaScript syntax
+        run: node --check src/index.js
+      - name: Check embedded page scripts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const pages = ['index.html','catalog.html','hunting-clothing.html','hunting-footwear.html','hunting-headwear.html','hunting-accessories.html','tactical-gear.html','fishing-gear.html','worker-assets/account.html'];
+          let n=0;
+          for (const page of pages) {
+            const html=fs.readFileSync(page,'utf8');
+            const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+            for (const [,attrs,code] of scripts) {
+              if (/application\/ld\+json/i.test(attrs) || !code.trim()) continue;
+              new Function(code);
+              n++;
+            }
+          }
+          console.log('Embedded JavaScript blocks parsed:',n);
+          NODE
+      - name: Verify production integration wiring
+        shell: bash
+        run: |
+          grep -q 'database_name": "acc-catalog-db' wrangler.jsonc
+          grep -q '506eb009-1462-4ff6-a781-1404e9aecf59' wrangler.jsonc
+          grep -q 'binding": "DB' wrangler.jsonc
+          grep -q 'login_challenges' migrations/0001_telegram_auth.sql
+          grep -q 'user_carts' migrations/0002_user_carts.sql
+          grep -q 'Allacontactical_bot' worker-assets/account.html
+          ! grep -R 'AllaconTacticalTest_bot' src/index.js worker-assets
+          for page in hunting-clothing.html hunting-footwear.html hunting-headwear.html hunting-accessories.html tactical-gear.html fishing-gear.html; do
+            grep -q 'data-category-cart-id' "$page"
+            grep -q 'allacontactical-bot.allacontactical.workers.dev/account.html' "$page"
+          done
+          grep -q 'data-catalog-cart-id' catalog.html
+          grep -q 'account.html' index.html
+          echo "Production DB, auth, account, homepage and category cart wiring verified."
