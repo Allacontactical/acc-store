@@ -213,6 +213,11 @@ async function handleAdminMedia(env,id) {
 export default {
   async fetch(request,env) {
     const url=new URL(request.url);
+    if (url.pathname==="/panel" || url.pathname==="/panel/" || url.pathname.startsWith("/panel/")) {
+      const assetUrl=new URL(request.url);
+      assetUrl.pathname=(url.pathname==="/panel" || url.pathname==="/panel/")?"/index.html":url.pathname.slice("/panel".length);
+      return env.ASSETS.fetch(new Request(assetUrl,request));
+    }
     if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});\n    if (url.pathname==="/public/products" && request.method==="GET") { try { return withCors(json({products:await publicProducts(env)}),request); } catch { return withCors(json({error:"Catalog temporarily unavailable"},503),request); } }
     if (url.pathname.startsWith("/media/") && request.method==="GET") return handleMedia(request,env,url.pathname.split("/").pop());
     if (!url.pathname.startsWith("/admin")) return withCors(json({error:"Not found"},404),request);
