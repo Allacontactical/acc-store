@@ -85,6 +85,25 @@ async function listProducts(env,url) {
   }
   return products;
 }
+async function publicProducts(env) {
+  const rows=await env.DB.prepare("SELECT * FROM acc_admin_products WHERE status IN ('active','expected','out_of_stock') ORDER BY sort_order ASC,updated_at DESC LIMIT 1000").all();
+  const output=[];
+  for (const p of rows.results||[]) {
+    let legacy={}; try { legacy=JSON.parse(p.legacy_json||"{}"); } catch {}
+    const uploaded=await env.DB.prepare("SELECT id,sort_order FROM acc_admin_product_images WHERE product_id=? ORDER BY sort_order,id").bind(p.id).all();
+    const oldImages=Array.isArray(legacy.images)?legacy.images.filter(x=>typeof x==="string"&&/^https:\/\//i.test(x)):[];
+    const newImages=(uploaded.results||[]).map(x=>"/media/"+x.id);
+    const images=[...oldImages,...newImages];
+    output.push({
+      id:p.id,title:p.title,price:p.price,currency:p.currency||"UAH",category:p.category||"",
+      image:images[0]||"",images,url:legacy.url||"https://allacontactical.com.ua/catalog.html",
+      availability:p.status==="expected"?"Очікується":p.status==="out_of_stock"?"Немає в наявності":(legacy.availability||"В наявності"),
+      availability_status:p.status==="expected"?"expected":p.status,
+      description:p.description||"",description_ru:p.description_ru||""
+    });
+  }
+  return output;
+}
 async function handleAdmin(request,env,url,email) {
   if (!env.DB || !env.PRODUCT_IMAGES) return json({error:"Admin storage is not configured"},503);
   const path = url.pathname.replace(/^\/admin\/?/,"");
@@ -194,7 +213,7 @@ async function handleAdminMedia(env,id) {
 export default {
   async fetch(request,env) {
     const url=new URL(request.url);
-    if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});
+    if (request.method==="OPTIONS") return new Response(null,{status:204,headers:cors(request)});\n    if (url.pathname==="/public/products" && request.method==="GET") { try { return withCors(json({products:await publicProducts(env)}),request); } catch { return withCors(json({error:"Catalog temporarily unavailable"},503),request); } }
     if (url.pathname.startsWith("/media/") && request.method==="GET") return handleMedia(request,env,url.pathname.split("/").pop());
     if (!url.pathname.startsWith("/admin")) return withCors(json({error:"Not found"},404),request);
     if (!await verifyAdmin(request,env)) return withCors(json({error:"Unauthorized"},401),request);
