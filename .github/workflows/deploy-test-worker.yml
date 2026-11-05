@@ -37,7 +37,8 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TEST_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_TEST_WEBHOOK_SECRET }}
         run: |
-          curl --fail-with-body --silent --show-error \
+          response=$(curl --fail-with-body --silent --show-error \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
             --data-urlencode "url=https://allacontactical-bot-test.allacontactical.workers.dev/webhook" \
-            --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}"
+            --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}")
+          echo "$response" | jq -e '.ok == true' >/dev/null
