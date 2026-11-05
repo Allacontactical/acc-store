@@ -701,7 +701,7 @@
         <p class="hero-slogan">Для справжніх професіоналів</p>
         <p class="hero-description">Мисливський одяг, взуття та спорядження для тих, хто знає ціну надійного екіпірування.</p>
         <div class="actions">
-          <a class="btn" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Отримати консультацію фахівця</a>
+          <a class="btn" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">Отримати консультацію фахівця</a>
           <a class="btn secondary" href="./catalog.html">Переглянути каталог</a>
         </div>
       </div>
@@ -791,7 +791,7 @@
         </div>
         <div class="actions">
           <a class="btn" href="./catalog.html">Перейти до каталогу</a>
-          <a class="btn secondary" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Запитати в Telegram</a>
+          <a class="btn secondary" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">Запитати в Telegram</a>
         </div>
       </div>
     </section>
@@ -854,7 +854,7 @@
         </div>
 
         <div class="actions">
-          <a class="btn" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Уточнити наявність у Telegram</a>
+          <a class="btn" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">Уточнити наявність у Telegram</a>
           <a class="btn secondary" href="tel:+380667412693">Зателефонувати</a>
         </div>
       </div>
@@ -868,10 +868,10 @@
           <p>Напишіть нам у Telegram або зателефонуйте. Допоможемо уточнити наявність, розмір і доставку.</p>
 
           <div class="actions">
-            <a class="btn" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">
+            <a class="btn" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">
               Отримати консультацію фахівця
             </a>
-            <a class="btn secondary" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">
+            <a class="btn secondary" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">
               Замовити в Telegram
             </a>
 
@@ -909,7 +909,7 @@
     <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
       <button class="cart-close" id="cartClose" type="button" aria-label="Закрити">×</button>
       <h2 id="cartTitle">Ваш кошик</h2><div id="cartItems"><p class="cart-empty">Кошик поки порожній.</p></div>
-      <div class="actions"><a class="btn" id="cartCheckout" href="https://t.me/Allacontactical_bot" target="_blank" rel="noopener">Узгодити замовлення в Telegram</a></div>
+      <div class="actions"><a class="btn" id="cartCheckout" href="https://t.me/AllaconTacticalTest_bot" target="_blank" rel="noopener">Узгодити замовлення в Telegram</a></div>
       <p class="muted" style="font-size:12px">Наявність, розмір і підсумкову вартість підтверджує фахівець перед оплатою.</p>
     </div>
   </div>
@@ -1005,7 +1005,7 @@
         article.setAttribute("data-expected-arrival", product.expected_arrival || "");
 
         var imageLink = document.createElement("a");
-        imageLink.href = "https://t.me/Allacontactical_bot";
+        imageLink.href = "https://t.me/AllaconTacticalTest_bot";
         imageLink.target = "_blank";
         imageLink.rel = "noopener";
 
@@ -1064,7 +1064,7 @@
 
         var buy = document.createElement("a");
         buy.className = "link";
-        buy.href = "https://t.me/Allacontactical_bot";
+        buy.href = "https://t.me/AllaconTacticalTest_bot";
         buy.target = "_blank";
         buy.rel = "noopener";
         buy.textContent = "Отримати консультацію фахівця";
@@ -1142,6 +1142,16 @@
       function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
       var accountCartCount=null;
       function counters(){document.getElementById("cartCount").textContent=accountCartCount===null?cart.length:accountCartCount;document.getElementById("favoritesCount").textContent=favorites.length;}
+      function cartObject(){var items={};cart.forEach(function(id){items[String(id)]=(items[String(id)]||0)+1;});return items;}
+      async function saveAccountCart(){
+        var token=localStorage.getItem("acc_account_session_v1");
+        if(!token)return;
+        try{
+          var response=await fetch("/account/cart",{method:"PUT",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({cart:cartObject()}),cache:"no-store"});
+          if(!response.ok)throw new Error("Cart save failed");
+          accountCartCount=cart.length;counters();
+        }catch(_){accountCartCount=null;counters();}
+      }
       async function refreshAccountCartCount(){
         var token=localStorage.getItem("acc_account_session_v1");
         if(!token){accountCartCount=null;counters();return;}
@@ -1149,17 +1159,24 @@
           var response=await fetch("/account/cart",{method:"GET",headers:{"Authorization":"Bearer "+token},cache:"no-store"});
           if(!response.ok)throw new Error("Cart unavailable");
           var data=await response.json(),items=data.cart&&typeof data.cart==="object"?data.cart:{};
-          accountCartCount=Object.keys(items).reduce(function(sum,id){var qty=Number(items[id]);return sum+(Number.isInteger(qty)&&qty>0?qty:0);},0);
+          var local=cartObject(),merged={};
+          Object.keys(items).forEach(function(id){var qty=Number(items[id]);if(/^\\d{1,20}$/.test(id)&&Number.isInteger(qty)&&qty>0)merged[id]=Math.min(99,qty);});
+          Object.keys(local).forEach(function(id){merged[id]=Math.max(merged[id]||0,Math.min(99,local[id]));});
+          cart=Object.keys(merged).reduce(function(list,id){for(var n=0;n<merged[id];n++)list.push(id);return list;},[]);
+          save();
+          accountCartCount=cart.length;
           counters();
+          renderCart();
+          if(JSON.stringify(merged)!==JSON.stringify(items))saveAccountCart();
         }catch(_){accountCartCount=null;counters();}
       }
       function renderCart(){
         allProducts=window.accProducts||allProducts;
         cartItems.textContent="";
-        if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot";return;}
+        if(!cart.length){var p=document.createElement("p");p.className="cart-empty";p.textContent="Кошик поки порожній.";cartItems.appendChild(p);document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot";return;}
         cart.forEach(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});if(!p)return;var line=document.createElement("div");line.className="cart-line";var name=document.createElement("span");name.textContent=p.title;var price=document.createElement("strong");price.textContent=formatCartPrice(p);line.appendChild(name);line.appendChild(price);cartItems.appendChild(line);});
         var message="Вітаю! Хочу уточнити наявність і замовити:\n"+cart.map(function(id){var p=allProducts.find(function(x){return String(x.id)===String(id);});return p?p.title:"";}).filter(Boolean).join("\n");
-        document.getElementById("cartCheckout").href="https://t.me/Allacontactical_bot?text="+encodeURIComponent(message);
+        document.getElementById("cartCheckout").href="https://t.me/AllaconTacticalTest_bot?text="+encodeURIComponent(message);
       }
       document.getElementById("cartToggle").addEventListener("click",function(){renderCart();cartModal.classList.add("is-open");cartModal.setAttribute("aria-hidden","false");});
       document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
@@ -1168,7 +1185,7 @@
       grid.addEventListener("click",function(e){
         var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");
         if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"♥ Обране":"♡ Обране";save();counters();}
-        if(c){var cid=c.getAttribute("data-cart-id");if(cart.indexOf(cid)<0){cart.push(cid);c.classList.add("is-active");c.textContent="✓ Додано";save();counters();}}
+        if(c){var cid=c.getAttribute("data-cart-id");if(cart.indexOf(cid)<0){cart.push(cid);c.classList.add("is-active");c.textContent="✓ Додано";save();counters();saveAccountCart();}}
       });
       counters();
       refreshAccountCartCount();
