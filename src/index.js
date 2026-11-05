@@ -173,10 +173,10 @@ async function handleWebhook(request, env) {
 
   const catalogKeyboard = {
     inline_keyboard: [
-      [{ text: "🧥 Костюми, куртки та жилети", url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki" }],
-      [{ text: "👖 Штани та нагрудники", url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki" }],
-      [{ text: "🥾 Худі, пуловери та футболки", url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri" }],
-      [{ text: "🧢 Шапки та кепки", url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki" }]
+      [{ text: "Костюми, куртки та жилети", url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki" }],
+      [{ text: "Штани та нагрудники", url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki" }],
+      [{ text: "Худі, пуловери та футболки", url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri" }],
+      [{ text: "Шапки та кепки", url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki" }]
     ]
   };
 
@@ -206,20 +206,20 @@ async function handleWebhook(request, env) {
       }
     } else {
       await telegramSend(env, chatId,
-        "Вітаємо в AllaconTactical! 🎯\n\n" +
+        "Вітаємо в AllaconTactical!\n\n" +
         "Допоможемо підібрати екіпірування для полювання.\n\n" +
         "Оберіть категорію товарів:", catalogKeyboard);
     }
     return new Response("OK");
   }
 
-  let reply = "Вітаємо в AllaconTactical! 🎯\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
+  let reply = "Вітаємо в AllaconTactical!\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
   let replyMarkup;
   if (command === "/catalog") {
-    reply = "Каталог AllaconTactical 🦌\n\nОберіть потрібну категорію:";
+    reply = "Каталог AllaconTactical\n\nОберіть потрібну категорію:";
     replyMarkup = catalogKeyboard;
   } else if (command === "/help") {
-    reply = "Допоможемо підібрати екіпірування! 🎯\n\nНапишіть сезон, розмір і бажаний бюджет — підкажемо з вибором.";
+    reply = "Допоможемо підібрати екіпірування!\n\nНапишіть сезон, розмір і бажаний бюджет — підкажемо з вибором.";
   } else if (command === "/contact") {
     reply = "Напишіть у цей чат, який товар вас цікавить. Допоможемо уточнити наявність, розмір і термін відправлення.";
   }
