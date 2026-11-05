@@ -9,14 +9,17 @@ This is an isolated admin application. It does not replace or modify the buyer a
 - Migration: `migrations/0001_admin_schema.sql`
 
 ## Required security configuration before deployment
-1. Create a Cloudflare Access self-hosted application for the chosen admin API hostname.
-2. Add an allow policy for the single owner email only.
-3. Configure Worker variables (not source code): `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, and `ADMIN_EMAIL`.
-4. Set a custom hostname for the Worker and configure its DNS record only after the owner approves the exact hostname.
-5. Set `window.ACC_ADMIN_API_URL` in `admin/config.js` to that protected HTTPS hostname.
+1. The Worker custom domain is configured as `admin.allacontactical.com.ua` in Wrangler. Do not publish it until the owner approves DNS/custom-domain setup.
+2. In Cloudflare Zero Trust, create two self-hosted Access applications on that hostname:
+   - Path `/panel*` — protects the admin interface and its static assets.
+   - Path `/admin*` — protects all management API routes and private admin photo previews.
+3. For both applications, create an Allow policy for the owner's exact email only. Do not add public or broad email-domain access.
+4. Do not protect `/public/products` or `/media/*`: these are read-only public catalog routes. All write routes remain under `/admin/*`.
+5. Configure Worker variables (not source code): `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD`, and `ADMIN_EMAIL`.
 6. Keep the R2 bucket private. Do not enable public bucket access.
+7. The admin page is served at `https://admin.allacontactical.com.ua/panel/`. The public catalog endpoint is `https://admin.allacontactical.com.ua/public/products`.
 
-The API intentionally returns 401 when Access variables are missing or the JWT cannot be verified.
+The API intentionally returns 401 when Access variables are missing or the JWT cannot be verified. The admin UI is served by the same Worker, but Access must protect the `/panel*` path separately from the public read-only routes.
 
 ## Apply the D1 migration
 From this directory, after reviewing the target account and database:
@@ -40,8 +43,8 @@ Do not deploy this Worker or expose the admin page until the Access application,
 - Product photo previews in the protected admin interface.
 
 ## Not yet complete
-- Initial import of the current `products.json` catalog and the fresh Prom export.
-- Public catalog read integration so approved D1 edits appear on the customer-facing website.
+- Initial import of the current `products.json` catalog and the fresh Prom export. A repeatable SQL builder is provided at `scripts/build-admin-import.mjs`; it only generates SQL and does not apply it.
+- Optional public catalog feed is implemented; `catalog.html` and `account.html` use it only when `catalog-api-config.js` is configured, and retain `products.json` as fallback.
 - Prom API/export synchronization and a proper moderation importer.
 - End-to-end tests against a staging Worker and D1/R2 instance.
 - Deployment and DNS/Access configuration.
