@@ -33,7 +33,7 @@ section{padding:36px 0}.section-head{margin-bottom:20px}h2{font-size:clamp(24px,
 .goog-te-banner-frame,.skiptranslate iframe{display:none!important}
 body{top:0!important}
 
-  </style>
+  .add-to-cart-btn{display:block;width:100%;margin:12px 0 8px;padding:11px 14px;border:1px solid #f28c28;border-radius:5px;background:#f28c28;color:#171b16;font:inherit;font-weight:700;cursor:pointer}.add-to-cart-btn:hover,.add-to-cart-btn:focus-visible{background:#ff9b38;outline:2px solid #f28c28;outline-offset:2px}.add-to-cart-btn:disabled{opacity:.65;cursor:wait}.add-to-cart-btn.is-added{background:#526b43;border-color:#526b43;color:#fff}</style>
 
   <link rel="canonical" href="https://allacontactical.com.ua/tactical-gear.html">
   <meta property="og:type" content="website">
@@ -111,9 +111,34 @@ function mappedCategory(p){if(p.category==="Тактичний одяг та с�
 
 var grid=document.getElementById("productGrid"),search=document.getElementById("productSearch"),category=document.getElementById("categoryFilter"),count=document.getElementById("catalogCount"),products=[];
 function price(p){var n=Number(p.price);return isFinite(n)?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n)+" грн":"Ціну уточнюйте"}
-function card(p){var a=document.createElement("article");a.className="card";a.setAttribute("data-availability-status",p.availability_status||"");a.setAttribute("data-expected-arrival",p.expected_arrival||"");var link=document.createElement("a");link.href="https://t.me/Allacontactical_bot";link.target="_blank";link.rel="noopener";var wrap=document.createElement("div");wrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=p.title||"Товар AllaconTactical";img.loading="lazy";img.onerror=function(){wrap.style.display="none"};wrap.appendChild(img);link.appendChild(wrap);a.appendChild(link);var body=document.createElement("div");body.className="card-body";var h=document.createElement("h3");h.textContent=p.title||"Товар AllaconTactical";body.appendChild(h);var c=document.createElement("p");c.textContent=mappedCategory(p)||"";body.appendChild(c);if(p.description){var desc=document.createElement("p");desc.className="product-description";desc.textContent=p.description;body.appendChild(desc)}var pr=document.createElement("p");pr.className="price";var strong=document.createElement("strong");strong.textContent=price(p);pr.appendChild(strong);body.appendChild(pr);var buy=document.createElement("a");buy.className="link";buy.href="https://t.me/Allacontactical_bot";buy.target="_blank";buy.rel="noopener";buy.textContent="Отримати консультацію фахівця";body.appendChild(buy);var prom=document.createElement("a");prom.className="link";prom.href=p.url||"https://allacontactical.prom.ua/";prom.target="_blank";prom.rel="noopener";prom.textContent="Також доступно на Prom.ua →";body.appendChild(prom);a.appendChild(body);return a}
+function card(p){var a=document.createElement("article");a.className="card";a.setAttribute("data-availability-status",p.availability_status||"");a.setAttribute("data-expected-arrival",p.expected_arrival||"");var link=document.createElement("a");link.href="https://t.me/Allacontactical_bot";link.target="_blank";link.rel="noopener";var wrap=document.createElement("div");wrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=p.title||"Товар AllaconTactical";img.loading="lazy";img.onerror=function(){wrap.style.display="none"};wrap.appendChild(img);link.appendChild(wrap);a.appendChild(link);var body=document.createElement("div");body.className="card-body";var h=document.createElement("h3");h.textContent=p.title||"Товар AllaconTactical";body.appendChild(h);var c=document.createElement("p");c.textContent=mappedCategory(p)||"";body.appendChild(c);if(p.description){var desc=document.createElement("p");desc.className="product-description";desc.textContent=p.description;body.appendChild(desc)}var pr=document.createElement("p");pr.className="price";var strong=document.createElement("strong");strong.textContent=price(p);pr.appendChild(strong);body.appendChild(pr);var add=document.createElement("button");add.type="button";add.className="add-to-cart-btn";add.setAttribute("data-category-cart-id",String(p.id));add.textContent="До кошика";body.appendChild(add);var buy=document.createElement("a");buy.className="link";buy.href="https://t.me/Allacontactical_bot";buy.target="_blank";buy.rel="noopener";buy.textContent="Отримати консультацію фахівця";body.appendChild(buy);var prom=document.createElement("a");prom.className="link";prom.href=p.url||"https://allacontactical.prom.ua/";prom.target="_blank";prom.rel="noopener";prom.textContent="Також доступно на Prom.ua →";body.appendChild(prom);a.appendChild(body);return a}
 function render(){var q=(search.value||"").toLocaleLowerCase("uk-UA").trim(),sel=category.value;var list=products.filter(function(p){return allowedCategories.indexOf(mappedCategory(p))!==-1&&((p.title||"")+" "+(mappedCategory(p)||"")).toLocaleLowerCase("uk-UA").indexOf(q)!==-1&&(!sel||mappedCategory(p)===sel)});grid.textContent="";if(!list.length){var e=document.createElement("p");e.className="muted";e.textContent="У цій категорії за вашим запитом товарів не знайдено.";grid.appendChild(e)}else{var f=document.createDocumentFragment();list.forEach(function(p){f.appendChild(card(p))});grid.appendChild(f)}count.textContent="Показано товарів: "+list.length+" із "+products.length}
 fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog");return r.json()}).then(function(data){products=Array.isArray(data)?data.filter(function(p){return allowedCategories.indexOf(mappedCategory(p))!==-1}):[];var names=[];products.forEach(function(p){if(mappedCategory(p)&&names.indexOf(mappedCategory(p))===-1)names.push(mappedCategory(p))});names.sort(function(a,b){return a.localeCompare(b,"uk")});names.forEach(function(n){var o=document.createElement("option");o.value=n;o.textContent=n;category.appendChild(o)});render()}).catch(function(){grid.textContent="";var e=document.createElement("p");e.className="muted";e.textContent="Не вдалося завантажити каталог. Відкрийте магазин на Prom.ua.";grid.appendChild(e);count.textContent="Каталог тимчасово недоступний"});
+
+async function addCategoryProductToCart(id,button){
+ var oldText=button.textContent;button.disabled=true;button.textContent="Додаємо…";
+ try{
+  var token=localStorage.getItem("acc_account_session_v1"),cart={};
+  if(token){
+   var response=await fetch("/account/cart",{headers:{"Authorization":"Bearer "+token},cache:"no-store"});
+   if(!response.ok)throw new Error("Не вдалося завантажити кошик");
+   var data=await response.json();cart=data.cart&&typeof data.cart==="object"&&!Array.isArray(data.cart)?data.cart:{};
+  }
+  var local=[];try{local=JSON.parse(localStorage.getItem("accCart")||"[]");if(!Array.isArray(local))local=[];}catch(_){local=[];}
+  local.forEach(function(item){var key=String(item);if(/^\d{1,20}$/.test(key))cart[key]=Math.max(Number(cart[key])||0,local.filter(function(x){return String(x)===key;}).length);});
+  cart[id]=Math.min(99,(Number(cart[id])||0)+1);
+  var flat=[];Object.keys(cart).forEach(function(key){var qty=Math.max(0,Math.min(99,Math.floor(Number(cart[key])||0)));cart[key]=qty;for(var n=0;n<qty;n++)flat.push(key);});
+  localStorage.setItem("accCart",JSON.stringify(flat));
+  if(token){
+   var saved=await fetch("/account/cart",{method:"PUT",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({cart:cart}),cache:"no-store"});
+   if(!saved.ok)throw new Error("Не вдалося зберегти кошик");
+  }
+  button.textContent="Додано · "+cart[id];button.classList.add("is-added");
+ }catch(error){button.textContent="Помилка";button.title=error.message;}
+ finally{button.disabled=false;setTimeout(function(){if(button.isConnected){button.textContent="До кошика";button.classList.remove("is-added");}},2200);}
+}
+
+grid.addEventListener("click",function(event){var button=event.target.closest("[data-category-cart-id]");if(button){addCategoryProductToCart(button.getAttribute("data-category-cart-id"),button);}});
 search.addEventListener("input",render);category.addEventListener("change",render)
 }());
 </script>
