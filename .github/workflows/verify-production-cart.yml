@@ -20,7 +20,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const pages = ['index.html','catalog.html','hunting-clothing.html','hunting-footwear.html','hunting-headwear.html','hunting-accessories.html','tactical-gear.html','fishing-gear.html','worker-assets/account.html'];
+          const pages = ['index.html','account.html','catalog.html','hunting-clothing.html','hunting-footwear.html','hunting-headwear.html','hunting-accessories.html','tactical-gear.html','fishing-gear.html','worker-assets/account.html'];
           let n=0;
           for (const page of pages) {
             const html=fs.readFileSync(page,'utf8');
@@ -41,7 +41,8 @@ jobs:
           grep -q 'binding": "DB' wrangler.jsonc
           grep -q 'login_challenges' migrations/0001_telegram_auth.sql
           grep -q 'user_carts' migrations/0002_user_carts.sql
-          grep -q 'Allacontactical_bot' worker-assets/account.html
+          grep -q 'Allacontactical_bot' account.html
+          grep -q 'allacontactical.com.ua/account.html' worker-assets/account.html
           ! grep -R 'AllaconTacticalTest_bot' src/index.js worker-assets
           for page in hunting-clothing.html hunting-footwear.html hunting-headwear.html hunting-accessories.html tactical-gear.html fishing-gear.html; do
             grep -q 'data-category-cart-id' "$page"
