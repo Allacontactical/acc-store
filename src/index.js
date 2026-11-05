@@ -173,10 +173,13 @@ async function handleWebhook(request, env) {
 
   const catalogKeyboard = {
     inline_keyboard: [
-      [{ text: "Костюми, куртки та жилети", url: "https://allacontactical.prom.ua/ua/g138419515-mislivski-kostyumi-kurtki" }],
-      [{ text: "Штани та нагрудники", url: "https://allacontactical.prom.ua/ua/g138421493-mislivski-shtani-nagrudniki" }],
-      [{ text: "Худі, пуловери та футболки", url: "https://allacontactical.prom.ua/ua/g138424028-mislivski-hudi-puloveri" }],
-      [{ text: "Шапки та кепки", url: "https://allacontactical.prom.ua/ua/g138423958-mislivski-shapki-kepki" }]
+      [{ text: "Відкрити каталог AllaconTactical", url: "https://allacontactical.com.ua/catalog.html" }],
+      [{ text: "Одяг для полювання", url: "https://allacontactical.com.ua/hunting-clothing.html" }],
+      [{ text: "Взуття для полювання", url: "https://allacontactical.com.ua/hunting-footwear.html" }],
+      [{ text: "Шапки та кепки", url: "https://allacontactical.com.ua/hunting-headwear.html" }],
+      [{ text: "Аксесуари", url: "https://allacontactical.com.ua/hunting-accessories.html" }],
+      [{ text: "Тактичне спорядження", url: "https://allacontactical.com.ua/tactical-gear.html" }],
+      [{ text: "Товари для риболовлі", url: "https://allacontactical.com.ua/fishing-gear.html" }]
     ]
   };
 
