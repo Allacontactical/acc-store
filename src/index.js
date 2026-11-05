@@ -215,8 +215,9 @@ export default {
         (request.method === "POST" && url.pathname === "/auth/logout")) {
       return withCors(await handleAccount(request, env, url), request);
     }
-    if (request.method === "GET" && url.pathname === "/account.html" && env.ASSETS) {
-      return env.ASSETS.fetch(request);
+    if (request.method === "GET" && (url.pathname === "/account.html" || url.pathname === "/account") && env.ASSETS) {
+      const assetUrl = new URL("/account.html", request.url);
+      return env.ASSETS.fetch(new Request(assetUrl, request));
     }
     return withCors(new Response("Not found", { status: 404 }), request);
   }
