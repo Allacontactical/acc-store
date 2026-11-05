@@ -43,6 +43,7 @@ function openEditor(p){
  $("category").value=p?.category||"";$("description").value=p?.description||"";$("descriptionRu").value=p?.description_ru||"";
  $("editor").classList.remove("hidden");$("photoSection").classList.toggle("hidden",!editingId);
  $("photos").textContent="";
+ (p?.legacy_images||[]).forEach(url=>{const wrap=document.createElement("div");const el=document.createElement("img");el.alt="Імпортоване фото з поточного каталогу";el.src=url;wrap.append(el);const note=document.createElement("small");note.className="muted";note.textContent="Поточне фото";wrap.append(note);$("photos").append(wrap);});
  (p?.images||[]).forEach((img,index)=>{
   const wrap=document.createElement("div");wrap.style.display="grid";wrap.style.gap="4px";
   const el=document.createElement("img");el.alt="Фото товару";el.src=API+img.url;wrap.append(el);
