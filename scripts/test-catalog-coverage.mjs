@@ -73,3 +73,11 @@ for (const file of pages) {
 }
 console.log("Category cards: add-to-cart button and server cart integration present on all six groups");
 
+
+if (!home.includes("data-cart-action")) throw new Error("Homepage cart missing: homepage cart quantity/removal controls");
+
+if (!home.includes("changeCartItem")) throw new Error("Homepage cart missing: homepage cart update handler");
+
+if (!home.includes("data-cart-action=\"remove\"")) throw new Error("Homepage cart missing: homepage full removal control");
+
+if (!account.includes("cart-row-controls") || !account.includes("Видалити")) throw new Error("Cabinet cart removal/quantity controls missing");
