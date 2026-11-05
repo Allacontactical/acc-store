@@ -22,9 +22,11 @@ jobs:
           secrets: |
             TELEGRAM_BOT_TOKEN
             TELEGRAM_WEBHOOK_SECRET
+            TELEGRAM_BOT_USERNAME
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TEST_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_TEST_WEBHOOK_SECRET }}
+          TELEGRAM_BOT_USERNAME: ${{ secrets.TELEGRAM_TEST_BOT_USERNAME }}
       - name: Apply test D1 migration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
