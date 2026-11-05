@@ -39,13 +39,13 @@ Do not deploy this Worker or expose the admin page until the Access application,
 - Add/edit products and statuses: active, expected, out of stock, review.
 - Archive and restore products.
 - Upload up to 10 photos per product; browser converts images to WebP and the API checks the WebP signature and size before storing in private R2.
-- Delete and reorder uploaded photos.
+- Delete and reorder uploaded photos.\n- Prom CSV upload parses the standard Prom.ua columns and stages rows in a review queue. Existing products keep their current publication status until each imported row is approved; new products remain in `review` until an owner chooses a publication status.
 - Product photo previews in the protected admin interface.
 
 ## Not yet complete
 - Initial import of the current `products.json` catalog and the fresh Prom export. A repeatable SQL builder is provided at `scripts/build-admin-import.mjs`; it only generates SQL and does not apply it.
 - Optional public catalog feed is implemented; `catalog.html` and `account.html` use it only when `catalog-api-config.js` is configured, and retain `products.json` as fallback.
-- Prom API/export synchronization and a proper moderation importer.
+- Test the CSV parser against the next fresh Prom export. Automatic background synchronization from Prom is not available until an official API/webhook or reliable export process is configured.
 - End-to-end tests against a staging Worker and D1/R2 instance.
 - Deployment and DNS/Access configuration.
 
