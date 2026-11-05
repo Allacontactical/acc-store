@@ -23,7 +23,7 @@ function render(){
  rows.forEach(p=>{
   const card=document.createElement("article");card.className="item";
   const info=document.createElement("div"),h=document.createElement("h3"),meta=document.createElement("p");
-  h.textContent=p.title;meta.textContent=(p.category||"Без категорії")+" · "+(p.price==null?"Ціна не вказана":Number(p.price).toLocaleString("uk-UA")+" грн")+" · "+(labels[p.status]||p.status)+" · фото: "+(p.images||[]).length;
+  h.textContent=p.title;meta.textContent=(p.category||"Без категорії")+" · "+(p.price==null?"Ціна не вказана":Number(p.price).toLocaleString("uk-UA")+" грн")+" · "+(labels[p.status]||p.status)+" · фото: "+((p.legacy_images||[]).length+(p.images||[]).length);
   info.append(h,meta);const actions=document.createElement("div");actions.className="actions";
   const edit=document.createElement("button");edit.className="btn";edit.textContent="Редагувати";edit.onclick=()=>openEditor(p);
   actions.append(edit);
@@ -91,7 +91,7 @@ async function toWebP(file){
 async function uploadPhotos(files){
  if(!editingId)return;
  try{
-  const product=products.find(p=>p.id===editingId);let count=product?.images?.length||0;
+  const product=products.find(p=>p.id===editingId);let count=(product?.legacy_images?.length||0)+(product?.images?.length||0);
   for(const file of files){
    if(count>=10)throw new Error("Максимум 10 фотографій на товар.");
    if(!/^image\/(jpeg|png|webp)$/.test(file.type))throw new Error("Підтримуються JPG, PNG і WebP.");
