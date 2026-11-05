@@ -42,15 +42,18 @@ jobs:
           TELEGRAM_BOT_USERNAME: AllaconTacticalTest_bot
       - name: Verify test account page
         run: |
-          status=$(curl --retry 5 --retry-delay 2 --retry-all-errors --silent --show-error \
-            -w '%{http_code}' \
+          status=$(curl --location --max-redirs 5 --retry 5 --retry-delay 2 --retry-all-errors --silent --show-error \
+            -D /tmp/acc-account-headers.txt \
+            -w '%{http_code} %{url_effective}' \
             https://allacontactical-bot-test.allacontactical.workers.dev/account.html \
             -o /tmp/acc-account.html)
-          echo "Account page HTTP status: $status"
+          echo "Account page final status and URL: $status"
+          echo "Response headers:"
+          cat /tmp/acc-account-headers.txt
           echo "Account page response preview:"
           head -c 600 /tmp/acc-account.html
           echo
-          test "$status" = "200"
+          test "${status%% *}" = "200"
           grep -q 'loginButton' /tmp/acc-account.html
       - name: Apply test D1 migration
         env:
