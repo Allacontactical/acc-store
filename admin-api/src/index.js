@@ -199,6 +199,7 @@ async function handleAdminMedia(env,id) {
     if (!await verifyAdmin(request,env)) return withCors(json({error:"Unauthorized"},401),request);
     try {
       const email=String(env.ADMIN_EMAIL).toLowerCase();
+      if (url.pathname.startsWith("/admin/media/") && request.method==="GET") return withCors(await handleAdminMedia(env,url.pathname.split("/").pop()),request);
       return withCors(await handleAdmin(request,env,url,email),request);
     } catch(e) {
       return withCors(json({error:"Internal server error"},500),request);
