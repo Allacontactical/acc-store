@@ -258,6 +258,9 @@ export default {
       const assetUrl = new URL("/account.html", request.url);
       return env.ASSETS.fetch(new Request(assetUrl, request));
     }
+    if (request.method === "GET" && env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
     return withCors(new Response("Not found", { status: 404 }), request);
   }
 };
