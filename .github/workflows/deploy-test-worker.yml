@@ -55,6 +55,10 @@ jobs:
           echo
           test "${status%% *}" = "200"
           grep -q 'loginButton' /tmp/acc-account.html
+          grep -q 'cart-row-controls' /tmp/acc-account.html
+          grep -q 'cart-quantity' /tmp/acc-account.html
+          grep -q 'Видалити' /tmp/acc-account.html
+          echo "Live account page includes visible cart quantity and removal controls"
 
       - name: Verify category pages and product catalog
         shell: bash
