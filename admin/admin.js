@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const API=(window.ACC_ADMIN_API_URL||"").replace(/\/$/,"");
+const API=(window.ACC_ADMIN_API_URL||window.location.origin).replace(/\/$/,"");
 const $=id=>document.getElementById(id);
 let products=[],editingId=null;
 const labels={active:"В наявності",expected:"Очікується",out_of_stock:"Немає в наявності",review:"На перевірці",archived:"Архів"};
