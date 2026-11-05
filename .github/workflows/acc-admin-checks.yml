@@ -1,0 +1,35 @@
+name: ACC admin panel checks
+
+on:
+  push:
+    branches:
+      - feature/acc-admin-v2
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        run: |
+          node --check admin-api/src/index.js
+          node --check admin/admin.js
+          node --check scripts/build-admin-import.mjs
+      - name: Validate Worker configuration
+        run: node -e "JSON.parse(require('fs').readFileSync('admin-api/wrangler.jsonc','utf8'))"
+      - name: Test D1 migrations and current catalog import
+        run: |
+          sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0001_admin_schema.sql
+          sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0002_legacy_product_payload.sql
+          sqlite3 /tmp/acc-admin-test.db < admin-api/migrations/0003_unique_source_product_id.sql
+          node scripts/build-admin-import.mjs products.json /tmp/acc-admin-import.sql
+          sqlite3 /tmp/acc-admin-test.db < /tmp/acc-admin-import.sql
+          test "$(sqlite3 /tmp/acc-admin-test.db 'SELECT COUNT(*) FROM acc_admin_products;')" -gt 0
+          test "$(sqlite3 /tmp/acc-admin-test.db 'SELECT COUNT(*) FROM acc_admin_products WHERE status != "active";')" -eq 0
+          echo "D1 schema and catalog import smoke test passed."
