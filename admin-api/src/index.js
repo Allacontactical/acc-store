@@ -17,7 +17,7 @@ function cors(request) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://allacontactical.com.ua",
     "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,CF-Access-JWT-Assertion",
+    "Access-Control-Allow-Headers": "Content-Type,CF-Access-JWT-Assertion",\n    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
   };
