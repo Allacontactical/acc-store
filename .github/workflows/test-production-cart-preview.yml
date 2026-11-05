@@ -1,0 +1,56 @@
+name: Test production cart Worker on isolated D1
+
+on:
+  push:
+    branches:
+      - feature/production-cart-integration
+
+concurrency:
+  group: allacontactical-integration-preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migrations to isolated test D1
+        run: npx --yes wrangler@4.157.0 d1 migrations apply acc-test-db --remote --config wrangler.preview.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
+      - name: Deploy isolated integration preview
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
+          accountId: c19b4ac9465afa5249a41141eabfab21
+          command: deploy --config wrangler.preview.jsonc
+      - name: Verify authenticated profile and cart persistence
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          base="https://allacontactical-bot-integration-check.allacontactical.workers.dev"
+          token="$(openssl rand -hex 32)"
+          hash="$(printf '%s' "$token" | sha256sum | awk '{print $1}')"
+          cleanup() {
+            npx --yes wrangler@4.157.0 d1 execute acc-test-db --remote --config wrangler.preview.jsonc --command "DELETE FROM users WHERE telegram_user_id='integration-preview-ci';" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          sql="DELETE FROM users WHERE telegram_user_id='integration-preview-ci'; INSERT INTO users (telegram_user_id,telegram_username,first_name) VALUES ('integration-preview-ci','integration_preview','Preview CI'); INSERT INTO sessions (user_id,token_hash,expires_at) SELECT id,'$hash',strftime('%Y-%m-%dT%H:%M:%fZ','now','+1 hour') FROM users WHERE telegram_user_id='integration-preview-ci';"
+          npx --yes wrangler@4.157.0 d1 execute acc-test-db --remote --config wrangler.preview.jsonc --command "$sql"
+          profile="$(curl --fail-with-body --silent --show-error "$base/account/me" -H "Authorization: Bearer $token")"
+          echo "$profile" | jq -e '.user.first_name == "Preview CI"' >/dev/null
+          initial="$(curl --fail-with-body --silent --show-error "$base/account/cart" -H "Authorization: Bearer $token")"
+          echo "$initial" | jq -e '.cart == {}' >/dev/null
+          saved="$(curl --fail-with-body --silent --show-error -X PUT "$base/account/cart" -H "Authorization: Bearer $token" -H "Content-Type: application/json" --data '{"cart":{"2534652617":2,"2457811325":1}}')"
+          echo "$saved" | jq -e '.ok == true and .cart["2534652617"] == 2 and .cart["2457811325"] == 1' >/dev/null
+          reloaded="$(curl --fail-with-body --silent --show-error "$base/account/cart" -H "Authorization: Bearer $token")"
+          echo "$reloaded" | jq -e '.cart["2534652617"] == 2 and .cart["2457811325"] == 1' >/dev/null
+          cors="$(curl --silent --show-error -i -X OPTIONS "$base/account/cart" -H 'Origin: https://allacontactical.com.ua' -H 'Access-Control-Request-Method: PUT' -H 'Access-Control-Request-Headers: authorization,content-type')"
+          echo "$cors" | grep -qi 'access-control-allow-origin: https://allacontactical.com.ua'
+          redirect="$(curl --silent --show-error -D - -o /dev/null "$base/account.html")"
+          echo "$redirect" | grep -qi 'location: https://allacontactical.com.ua/account.html'
+          echo "Preview profile, cart round-trip, CORS and account redirect passed."
