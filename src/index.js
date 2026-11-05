@@ -203,7 +203,7 @@ async function handleWebhook(request, env) {
              last_name = excluded.last_name,
              updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')`
         ).bind(String(message.from.id), message.from.username || null, message.from.first_name || null, message.from.last_name || null).run();
-        await telegramSend(env, chatId, "Вхід підтверджено. Натисніть кнопку нижче, щоб повернутися до особистого кабінету AllaconTactical.", { inline_keyboard: [[{ text: "Відкрити особистий кабінет", url: "https://allacontactical.com.ua/account.html" }]] });
+        await telegramSend(env, chatId, "Вхід підтверджено. Поверніться до особистого кабінету AllaconTactical за посиланням:\nhttps://allacontactical.com.ua/account.html", { inline_keyboard: [[{ text: "Відкрити особистий кабінет", url: "https://allacontactical.com.ua/account.html" }]] });
       } else {
         await telegramSend(env, chatId, "Посилання для входу вже використано або його термін дії минув. Поверніться на сайт і створіть новий запит на вхід.");
       }
