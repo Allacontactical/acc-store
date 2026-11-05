@@ -58,6 +58,8 @@ jobs:
         run: |
           base="https://allacontactical-bot.allacontactical.workers.dev"
           code=$(curl --silent --show-error -D /tmp/acc-account-headers.txt -o /dev/null -w '%{http_code}' "$base/account.html")
+          echo "Account redirect HTTP status: $code"
+          cat /tmp/acc-account-headers.txt
           test "$code" = "302"
           grep -qi '^location: https://allacontactical.com.ua/account.html' /tmp/acc-account-headers.txt
           echo "Worker redirects customers to the same-origin account page."
