@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <base href="https://allacontactical.com.ua/">
+  <base href="https://allacontactical-bot-test.allacontactical.workers.dev/">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-S6BSTRD117"></script>
   <script>
@@ -1097,7 +1097,7 @@
         return article;
       }
 
-      fetch("./products.json?v=20261020")
+      fetch("https://allacontactical.com.ua/products.json?v=20261020")
         .then(function (response) {
           if (!response.ok) throw new Error("Не вдалося завантажити каталог");
           return response.json();
