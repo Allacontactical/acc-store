@@ -1160,7 +1160,7 @@
           if(!response.ok)throw new Error("Cart unavailable");
           var data=await response.json(),items=data.cart&&typeof data.cart==="object"?data.cart:{};
           var local=cartObject(),merged={};
-          Object.keys(items).forEach(function(id){var qty=Number(items[id]);if(/^\\d{1,20}$/.test(id)&&Number.isInteger(qty)&&qty>0)merged[id]=Math.min(99,qty);});
+          Object.keys(items).forEach(function(id){var qty=Number(items[id]);if(/^\d{1,20}$/.test(id)&&Number.isInteger(qty)&&qty>0)merged[id]=Math.min(99,qty);});
           Object.keys(local).forEach(function(id){merged[id]=Math.max(merged[id]||0,Math.min(99,local[id]));});
           cart=Object.keys(merged).reduce(function(list,id){for(var n=0;n<merged[id];n++)list.push(id);return list;},[]);
           save();
