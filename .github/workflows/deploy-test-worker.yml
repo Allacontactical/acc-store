@@ -1,6 +1,9 @@
 name: Deploy isolated AllaconTactical test bot
 
 on:
+  push:
+    branches:
+      - test/telegram-bot
   workflow_dispatch:
 
 jobs:
