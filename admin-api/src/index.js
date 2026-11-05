@@ -65,6 +65,14 @@ async function verifyAdmin(request, env) {
   } catch { return false; }
 }
 function uid() { return crypto.randomUUID(); }
+async function productId(env) {
+  for (let attempt=0;attempt<8;attempt++) {
+    const id="9"+Date.now().toString()+Math.floor(Math.random()*10000).toString().padStart(4,"0");
+    const exists=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE id=? OR source_product_id=?").bind(id,id).first();
+    if (!exists) return id;
+  }
+  throw new Error("Unable to allocate unique numeric product ID");
+}
 async function audit(env,email,action,productId,details={}) {
   await env.DB.prepare(
     "INSERT INTO acc_admin_audit (id,admin_email,action,product_id,details_json) VALUES (?,?,?,?,?)"
@@ -118,7 +126,7 @@ async function handleAdmin(request,env,url,email) {
     const title=String(p.title||"").trim();
     const price=p.price===null||p.price===""?null:Number(p.price);
     if (!title || title.length>250 || (price!==null&&(!Number.isFinite(price)||price<0)) || !["active","expected","out_of_stock","review"].includes(p.status||"review")) return json({error:"Invalid product fields"},400);
-    const id=uid();
+    const id=await productId(env);
     await env.DB.prepare("INSERT INTO acc_admin_products (id,title,price,currency,category,description,description_ru,status,source,source_product_id,source_url) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
       .bind(id,title,price,String(p.currency||"UAH").slice(0,8),String(p.category||"").slice(0,180),String(p.description||"").slice(0,12000),String(p.description_ru||"").slice(0,12000),p.status||"review","manual",null,null).run();
     await audit(env,email,"product_create",id);
