@@ -77,6 +77,32 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
         run: |
           npx --yes wrangler@4.157.0 d1 migrations apply acc-test-db --remote --config wrangler.jsonc
+      - name: Verify authenticated cart persistence
+        env:
+          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_TEST_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://allacontactical-bot-test.allacontactical.workers.dev"
+          session_token="$(openssl rand -hex 32)"
+          echo "::add-mask::$session_token"
+          session_hash="$(printf '%s' "$session_token" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$session_hash"
+          cleanup() {
+            npx --yes wrangler@4.157.0 d1 execute acc-test-db --remote --config wrangler.jsonc --command "DELETE FROM users WHERE telegram_user_id='ci-cart-test';" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          sql="DELETE FROM users WHERE telegram_user_id='ci-cart-test'; INSERT INTO users (telegram_user_id, telegram_username, first_name) VALUES ('ci-cart-test','ci_cart_test','CI Cart Test'); INSERT INTO sessions (user_id,token_hash,expires_at) SELECT id,'$session_hash',strftime('%Y-%m-%dT%H:%M:%fZ','now','+1 hour') FROM users WHERE telegram_user_id='ci-cart-test';"
+          npx --yes wrangler@4.157.0 d1 execute acc-test-db --remote --config wrangler.jsonc --command "$sql"
+          profile="$(curl --fail-with-body --silent --show-error "$base/account/me" -H "Authorization: Bearer $session_token")"
+          echo "$profile" | jq -e '.user.first_name == "CI Cart Test"' >/dev/null
+          initial="$(curl --fail-with-body --silent --show-error "$base/account/cart" -H "Authorization: Bearer $session_token")"
+          echo "$initial" | jq -e '.cart == {}' >/dev/null
+          saved="$(curl --fail-with-body --silent --show-error -X PUT "$base/account/cart" -H "Authorization: Bearer $session_token" -H "Content-Type: application/json" --data '{"cart":{"2534652617":2,"2457811325":1}}')"
+          echo "$saved" | jq -e '.ok == true and .cart["2534652617"] == 2 and .cart["2457811325"] == 1' >/dev/null
+          reloaded="$(curl --fail-with-body --silent --show-error "$base/account/cart" -H "Authorization: Bearer $session_token")"
+          echo "$reloaded" | jq -e '.cart["2534652617"] == 2 and .cart["2457811325"] == 1' >/dev/null
+          echo "Authenticated profile and cart save/read round-trip passed"
       - name: Set test Telegram webhook
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
