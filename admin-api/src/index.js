@@ -65,6 +65,14 @@ async function verifyAdmin(request, env) {
   } catch { return false; }
 }
 function uid() { return crypto.randomUUID(); }
+async function productIdForImport(env) {
+  for (let attempt=0;attempt<8;attempt++) {
+    const id="9"+Date.now().toString()+Math.floor(Math.random()*10000).toString().padStart(4,"0");
+    const exists=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE id=? OR source_product_id=?").bind(id,id).first();
+    if (!exists) return id;
+  }
+  throw new Error("Unable to allocate numeric product ID for imported product");
+}
 async function productId(env) {
   for (let attempt=0;attempt<8;attempt++) {
     const id="9"+Date.now().toString()+Math.floor(Math.random()*10000).toString().padStart(4,"0");
@@ -131,6 +139,58 @@ async function handleAdmin(request,env,url,email) {
       .bind(id,title,price,String(p.currency||"UAH").slice(0,8),String(p.category||"").slice(0,180),String(p.description||"").slice(0,12000),String(p.description_ru||"").slice(0,12000),p.status||"review","manual",null,null).run();
     await audit(env,email,"product_create",id);
     return json({id},201);
+  }
+  if (request.method==="GET" && path==="imports/pending") {
+    const rows=await env.DB.prepare("SELECT i.id,i.import_id,i.source_product_id,i.title,i.payload_json,i.existing_product_id,i.created_at FROM acc_admin_import_items i WHERE i.review_status='pending' ORDER BY i.created_at ASC LIMIT 500").all();
+    return json({items:(rows.results||[]).map(x=>({...x,payload:(()=>{try{return JSON.parse(x.payload_json)}catch{return {}}})()}))});
+  }
+  if (request.method==="POST" && path==="imports/prom") {
+    let body; try { body=await request.json(); } catch { return json({error:"Invalid JSON"},400); }
+    if (!Array.isArray(body.items) || body.items.length<1 || body.items.length>2000) return json({error:"Import must contain 1–2000 product rows"},400);
+    const importId=uid(), filename=String(body.filename||"Prom export").slice(0,200);
+    const seen=new Set(); let staged=0,matched=0;
+    await env.DB.prepare("INSERT INTO acc_admin_imports (id,source,status,filename,total_rows,imported_rows) VALUES (?,'prom','processing',?,?,0)").bind(importId,filename,body.items.length).run();
+    for (const raw of body.items) {
+      const sourceId=String(raw.source_product_id||"").trim();
+      const title=String(raw.title||"").trim();
+      if (!/^\\d{1,20}$/.test(sourceId) || !title || title.length>250 || seen.has(sourceId)) continue;
+      seen.add(sourceId);
+      const price=raw.price===null||raw.price===""||raw.price===undefined?null:Number(raw.price);
+      if (price!==null&&(!Number.isFinite(price)||price<0)) continue;
+      const images=Array.isArray(raw.images)?raw.images.filter(x=>typeof x==="string"&&/^https:\/\//i.test(x)).slice(0,10):[];
+      const payload={id:sourceId,title,price,currency:String(raw.currency||"UAH").slice(0,8),category:String(raw.category||"").slice(0,180),description:String(raw.description||"").slice(0,12000),description_ru:String(raw.description_ru||"").slice(0,12000),image:images[0]||"",images,url:String(raw.url||"").slice(0,1000),availability:String(raw.availability||"").slice(0,180)};
+      const existing=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE source_product_id=?").bind(sourceId).first();
+      if (existing) matched++;
+      await env.DB.prepare("INSERT INTO acc_admin_import_items (id,import_id,source_product_id,title,payload_json,existing_product_id) VALUES (?,?,?,?,?,?) ON CONFLICT(import_id,source_product_id) DO NOTHING").bind(uid(),importId,sourceId,title,JSON.stringify(payload),existing?.id||null).run();
+      staged++;
+    }
+    await env.DB.prepare("UPDATE acc_admin_imports SET status='completed',imported_rows=?,completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").bind(staged,importId).run();
+    await audit(env,email,"prom_import_stage",null,{importId,staged,matched,filename});
+    return json({import_id:importId,staged,matched_existing:matched,new_products:staged-matched},201);
+  }
+  const importReview=path.match(/^imports\/items\/([0-9a-f-]{36})\/(approve|reject)$/i);
+  if (importReview && request.method==="POST") {
+    const itemId=importReview[1],decision=importReview[2];
+    const item=await env.DB.prepare("SELECT * FROM acc_admin_import_items WHERE id=? AND review_status='pending'").bind(itemId).first();
+    if (!item) return json({error:"Pending import item not found"},404);
+    if (decision==="reject") {
+      await env.DB.prepare("UPDATE acc_admin_import_items SET review_status='rejected',reviewed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").bind(itemId).run();
+      await audit(env,email,"prom_import_reject",item.existing_product_id,{itemId,source_product_id:item.source_product_id});
+      return json({ok:true,decision:"rejected"});
+    }
+    let payload; try { payload=JSON.parse(item.payload_json); } catch { return json({error:"Invalid staged product payload"},400); }
+    const existing=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE source_product_id=?").bind(item.source_product_id).first();
+    let productId=existing?.id||item.source_product_id;
+    if (!existing) {
+      const idTaken=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE id=?").bind(productId).first();
+      if (idTaken) productId=await productIdForImport(env);
+      await env.DB.prepare("INSERT INTO acc_admin_products (id,title,price,currency,category,description,description_ru,status,source,source_product_id,source_url,legacy_json) VALUES (?,?,?,?,?,?,?,'review','prom',?,?,?)").bind(productId,payload.title,payload.price,payload.currency,payload.category,payload.description,payload.description_ru,item.source_product_id,payload.url,JSON.stringify(payload)).run();
+    } else {
+      await env.DB.prepare("UPDATE acc_admin_products SET title=?,price=?,currency=?,category=?,description=?,description_ru=?,source='prom',source_url=?,legacy_json=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").bind(payload.title,payload.price,payload.currency,payload.category,payload.description,payload.description_ru,payload.url,JSON.stringify(payload),productId).run();
+    }
+    await env.DB.prepare("UPDATE acc_admin_import_items SET review_status='approved',existing_product_id=?,reviewed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=?").bind(productId,itemId).run();
+    await audit(env,email,"prom_import_approve",productId,{itemId,source_product_id:item.source_product_id,isNew:!existing});
+    return json({ok:true,product_id:productId,is_new:!existing,status:existing?"preserved":"review"});
   }
   const imageDelete=path.match(/^products\/([0-9]{1,20}|[0-9a-f-]{36})\/images\/([0-9a-f-]{36})$/i);
   if (imageDelete && request.method==="DELETE") {
