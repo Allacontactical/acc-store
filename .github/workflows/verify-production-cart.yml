@@ -46,7 +46,7 @@ jobs:
           ! grep -R 'AllaconTacticalTest_bot' src/index.js worker-assets
           for page in hunting-clothing.html hunting-footwear.html hunting-headwear.html hunting-accessories.html tactical-gear.html fishing-gear.html; do
             grep -q 'data-category-cart-id' "$page"
-            grep -q 'allacontactical-bot.allacontactical.workers.dev/account.html' "$page"
+            grep -q './account.html' "$page"
           done
           grep -q 'data-catalog-cart-id' catalog.html
           grep -q 'account.html' index.html
