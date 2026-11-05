@@ -95,7 +95,7 @@ async function publicProducts(env) {
     const newImages=(uploaded.results||[]).map(x=>"/media/"+x.id);
     const images=[...oldImages,...newImages];
     output.push({
-      id:p.id,title:p.title,price:p.price,currency:p.currency||"UAH",category:p.category||"",
+      id:(p.source_product_id||p.id),admin_id:p.id,title:p.title,price:p.price,currency:p.currency||"UAH",category:p.category||"",
       image:images[0]||"",images,url:legacy.url||"https://allacontactical.com.ua/catalog.html",
       availability:p.status==="expected"?"Очікується":p.status==="out_of_stock"?"Немає в наявності":(legacy.availability||"В наявності"),
       availability_status:p.status==="expected"?"expected":p.status,
