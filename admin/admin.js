@@ -102,9 +102,92 @@ async function uploadPhotos(files){
   const p=products.find(x=>x.id===editingId);openEditor(p);
  }catch(e){message(e.message,true);}
 }
+function parsePromCSV(text){
+ const rows=[];let row=[],field="",quoted=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}else if(ch==='"')quoted=false;else field+=ch;continue;}
+  if(ch==='"'){quoted=true;continue;}
+  if(ch===","){row.push(field);field="";continue;}
+  if(ch==="\\r"||ch==="\\n"){if(ch==="\\r"&&text[i+1]==="\\n")i++;row.push(field);field="";if(row.some(x=>x!==""))rows.push(row);row=[];continue;}
+  field+=ch;
+ }
+ if(field!==""||row.length){row.push(field);rows.push(row);}
+ return rows;
+}
+function promPlainText(value){
+ return String(value||"").replace(/<br\\s*\\/?\\s*>/gi,"\\n").replace(/<\\/p\\s*>/gi,"\\n\\n").replace(/<[^>]*>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&ndash;/gi,"–").replace(/&mdash;/gi,"—").trim();
+}
+function promRowsFromCSV(text){
+ const rows=parsePromCSV(text);if(rows.length<2)throw new Error("CSV не містить рядків товарів.");
+ const headers=rows[0].map(x=>String(x||"").replace(/^\\uFEFF/,"").trim());
+ const idx=name=>headers.indexOf(name);
+ const get=(row,name)=>{const n=idx(name);return n<0?"":String(row[n]??"").trim();};
+ const items=[];let skipped=0;
+ for(const row of rows.slice(1)){
+  const url=get(row,"Продукт_на_сайті");
+  const idValue=get(row,"Ідентифікатор_товару")||get(row,"Унікальний_ідентифікатор")||get(row,"Код_товару");
+  const fromUrl=(url.match(/\\/p(\\d{5,20})[-./]/i)||[])[1]||"";
+  const sourceId=(idValue.match(/\\d{1,20}/)||[])[0]||fromUrl;
+  const title=get(row,"Назва_позиції_укр")||get(row,"Назва_позиції");
+  if(!sourceId||!title){skipped++;continue;}
+  const rawPrice=get(row,"Ціна").replace(/\\s/g,"").replace(",",".");
+  const price=rawPrice&&Number.isFinite(Number(rawPrice))?Number(rawPrice):null;
+  const imageCell=get(row,"Посилання_зображення");
+  const images=(imageCell.match(/https?:\\/\\/[^\\s;,|]+/gi)||[]).slice(0,10);
+  items.push({
+   source_product_id:sourceId,title:title.slice(0,250),price,currency:get(row,"Валюта")||"UAH",
+   category:get(row,"Назва_групи"),description:promPlainText(get(row,"Опис_укр")||get(row,"Опис")),
+   description_ru:promPlainText(get(row,"Опис")),images,url,
+   availability:get(row,"Наявність")
+  });
+ }
+ return {items,total:rows.length-1,skipped};
+}
+async function stagePromCSV(){
+ const file=$("promFile").files?.[0];if(!file){$("promImportStatus").textContent="Спочатку виберіть CSV-файл Prom.ua.";return;}
+ if(file.size>15*1024*1024){$("promImportStatus").textContent="Файл завеликий. Максимум 15 МБ.";return;}
+ const button=$("stagePromImport");button.disabled=true;
+ try{
+  $("promImportStatus").textContent="Читаю CSV та перевіряю рядки…";
+  const buffer=await file.arrayBuffer();let decoded=new TextDecoder("utf-8").decode(buffer);
+  if(decoded.includes("�"))decoded=new TextDecoder("windows-1251").decode(buffer);
+  const parsed=promRowsFromCSV(decoded);
+  if(!parsed.items.length)throw new Error("Не знайдено товарів із числовим ID та назвою. Перевірте формат експорту.");
+  $("promImportStatus").textContent="Передаю "+parsed.items.length+" товарів у чергу перевірки…";
+  const result=await api("/admin/imports/prom",{method:"POST",body:JSON.stringify({filename:file.name,items:parsed.items})});
+  $("promImportStatus").textContent="Готово: у чергу додано "+result.staged+" товарів; уже є в ACC: "+result.matched_existing+"; нових: "+result.new_products+"; пропущено рядків CSV: "+parsed.skipped+". Нічого не опубліковано автоматично.";
+  await loadReviewQueue();await load();
+ }catch(e){$("promImportStatus").textContent=e.message;}
+ finally{button.disabled=false;}
+}
+async function loadReviewQueue(){
+ const root=$("promReviewItems");if(!root)return;
+ try{
+  const data=await api("/admin/imports/pending");root.textContent="";
+  const items=data.items||[];
+  if(!items.length){const p=document.createElement("p");p.className="muted";p.textContent="Черга перевірки порожня.";root.append(p);return;}
+  items.forEach(item=>{
+   const card=document.createElement("article");card.className="item";
+   const info=document.createElement("div"),h=document.createElement("h3"),meta=document.createElement("p");
+   h.textContent=item.title;meta.textContent="Prom ID: "+item.source_product_id+" · "+(item.existing_product_id?"Товар уже є в ACC":"Новий товар")+" · "+(item.payload?.price==null?"Ціна не вказана":item.payload.price+" "+(item.payload.currency||"UAH"))+" · "+(item.payload?.images?.length||0)+" фото";
+   info.append(h,meta);const actions=document.createElement("div");actions.className="actions";
+   const approve=document.createElement("button");approve.className="btn";approve.textContent="Підтвердити";
+   approve.onclick=()=>reviewPromItem(item.id,"approve");
+   const reject=document.createElement("button");reject.className="btn danger";reject.textContent="Відхилити";
+   reject.onclick=()=>reviewPromItem(item.id,"reject");
+   actions.append(approve,reject);card.append(info,actions);root.append(card);
+  });
+ }catch(e){root.textContent="";const p=document.createElement("p");p.className="muted";p.textContent="Не вдалося завантажити чергу: "+e.message;root.append(p);}
+}
+async function reviewPromItem(id,decision){
+ try{await api("/admin/imports/items/"+id+"/"+decision,{method:"POST"});message(decision==="approve"?"Імпортований товар підтверджено. Нові товари залишаються зі статусом «На перевірці».":"Рядок імпорту відхилено.");await loadReviewQueue();await load();}
+ catch(e){message(e.message,true);}
+}
 $("newProduct").addEventListener("click",()=>openEditor(null));
 $("closeEditor").addEventListener("click",resetEditor);$("cancelEdit").addEventListener("click",resetEditor);
 $("productForm").addEventListener("submit",save);$("search").addEventListener("input",render);$("filter").addEventListener("change",render);
 $("photoFiles").addEventListener("change",e=>uploadPhotos(Array.from(e.target.files||[])));
-load();
+$("stagePromImport").addEventListener("click",stagePromCSV);
+load();loadReviewQueue();
 })();
