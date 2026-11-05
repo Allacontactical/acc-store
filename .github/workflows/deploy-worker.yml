@@ -83,4 +83,4 @@ jobs:
           echo "Telegram webhook status:"
           curl --fail-with-body --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo" | jq '{ok, result: {url: .result.url, pending_update_count: .result.pending_update_count, last_error_date: .result.last_error_date, last_error_message: .result.last_error_message, allowed_updates: .result.allowed_updates}}'
 
-# Re-run deployment to verify the current production Telegram token.
+# Redeploy after the production Telegram token was updated in GitHub Actions secrets.
