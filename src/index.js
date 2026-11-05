@@ -242,7 +242,8 @@ export default {
     if (request.method === "GET" && url.pathname === "/") return withCors(new Response("AllaconTactical bot is ready."), request);
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
-    if ((request.method === "GET" && url.pathname === "/account/me") ||
+    if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
+        (request.method === "PUT" && url.pathname === "/account/cart") ||
         (request.method === "POST" && url.pathname === "/auth/logout")) {
       return withCors(await handleAccount(request, env, url), request);
     }
