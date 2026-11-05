@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "acc-admin-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-05",
+  "workers_dev": true,
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "acc-catalog-db",
+    "database_id": "506eb009-1462-4ff6-a781-1404e9aecf59"
+  }],
+  "r2_buckets": [{
+    "binding": "PRODUCT_IMAGES",
+    "bucket_name": "acc-product-images"
+  }]
+}
