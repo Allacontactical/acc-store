@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -21,6 +22,7 @@ jobs:
           node --check admin-api/src/index.js
           node --check admin/admin.js
           node --check scripts/build-admin-import.mjs
+          node --check catalog-api-config.js
       - name: Validate Worker configuration
         run: node -e "JSON.parse(require('fs').readFileSync('admin-api/wrangler.jsonc','utf8'))"
       - name: Test D1 migrations and current catalog import
