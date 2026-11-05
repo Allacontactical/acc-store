@@ -218,9 +218,13 @@ async function handleWebhook(request, env) {
 
   let reply = "Вітаємо в AllaconTactical!\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
   let replyMarkup;
-  if (command === "/catalog") {
-    reply = "Каталог AllaconTactical\n\nОберіть потрібну категорію:";
+  const textCommand = fullText.toLocaleLowerCase("uk-UA").replace(/\\s+/g, " ").trim();
+  if (command === "/catalog" || ["каталог", "каталог товарів", "відкрити каталог", "товари"].includes(textCommand)) {
+    reply = "Каталог AllaconTactical\\n\\nОберіть потрібну категорію:";
     replyMarkup = catalogKeyboard;
+  } else if (command === "/account" || ["особистий кабінет", "кабінет"].includes(textCommand)) {
+    reply = "Особистий кабінет AllaconTactical:";
+    replyMarkup = { inline_keyboard: [[{ text: "Відкрити особистий кабінет", url: "https://allacontactical.com.ua/account.html" }]] };
   } else if (command === "/help") {
     reply = "Допоможемо підібрати екіпірування!\n\nНапишіть сезон, розмір і бажаний бюджет — підкажемо з вибором.";
   } else if (command === "/contact") {
