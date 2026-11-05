@@ -3,7 +3,13 @@
   "name": "acc-admin-api",
   "main": "src/index.js",
   "compatibility_date": "2026-11-05",
-  "workers_dev": true,\n  "routes": [{ "pattern": "admin.allacontactical.com.ua", "custom_domain": true }],\n  "assets": {\n    "directory": "../admin",\n    "binding": "ASSETS",\n    "run_worker_first": ["/panel*", "/admin/*", "/media/*", "/public/*"]\n  },
+  "workers_dev": true,
+  "routes": [{ "pattern": "admin.allacontactical.com.ua", "custom_domain": true }],
+  "assets": {
+    "directory": "../admin",
+    "binding": "ASSETS",
+    "run_worker_first": ["/panel*", "/admin/*", "/media/*", "/public/*"]
+  },
   "d1_databases": [{
     "binding": "DB",
     "database_name": "acc-catalog-db",
