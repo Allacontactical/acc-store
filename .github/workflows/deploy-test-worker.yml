@@ -23,8 +23,8 @@ jobs:
             TELEGRAM_BOT_TOKEN
             TELEGRAM_WEBHOOK_SECRET
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TEST_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_TEST_WEBHOOK_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
           TELEGRAM_BOT_USERNAME: AllaconTacticalTest_bot
       - name: Apply test D1 migration
         env:
@@ -33,8 +33,8 @@ jobs:
           npx wrangler d1 migrations apply acc-test-db --remote --config wrangler.jsonc
       - name: Set test Telegram webhook
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TEST_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_TEST_WEBHOOK_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         run: |
           response=$(curl --fail-with-body --silent --show-error \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
