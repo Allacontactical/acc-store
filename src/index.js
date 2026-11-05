@@ -239,10 +239,6 @@ export default {
 
     const cors = corsHeaders(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (request.method === "GET" && url.pathname === "/" && env.ASSETS) {
-      const assetUrl = new URL("/index.html", request.url);
-      return env.ASSETS.fetch(new Request(assetUrl, request));
-    }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
     if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
@@ -250,16 +246,8 @@ export default {
         (request.method === "POST" && url.pathname === "/auth/logout")) {
       return withCors(await handleAccount(request, env, url), request);
     }
-    if (request.method === "GET" && url.pathname === "/preview" && env.ASSETS) {
-      const previewUrl = new URL("/index.html", request.url);
-      return env.ASSETS.fetch(new Request(previewUrl, request));
-    }
-    if (request.method === "GET" && (url.pathname === "/account.html" || url.pathname === "/account") && env.ASSETS) {
-      const assetUrl = new URL("/account.html", request.url);
-      return env.ASSETS.fetch(new Request(assetUrl, request));
-    }
-    if (request.method === "GET" && env.ASSETS) {
-      return env.ASSETS.fetch(request);
+    if (request.method === "GET" && (url.pathname === "/account.html" || url.pathname === "/account")) {
+      return Response.redirect("https://allacontactical.com.ua/account.html", 302);
     }
     return withCors(new Response("Not found", { status: 404 }), request);
   }
