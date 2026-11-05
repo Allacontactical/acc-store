@@ -181,7 +181,14 @@
   }
   async function loadCabinetCart(){
     const data = await api("/account/cart");
-    cabinetCart = data.cart && typeof data.cart === "object" && !Array.isArray(data.cart) ? data.cart : {};
+    cabinetCart = data.cart && typeof data.cart === "object" && !Array.isArray(data.cart) ? {...data.cart} : {};
+    let guest = [];
+    try { guest = JSON.parse(localStorage.getItem("accCart") || "[]"); } catch (_) { guest = []; }
+    if (Array.isArray(guest) && guest.length) {
+      guest.forEach(id => { const key = String(id); if (/^\\d{1,20}$/.test(key)) cabinetCart[key] = Math.min(99, (Number(cabinetCart[key]) || 0) + 1); });
+      localStorage.removeItem("accCart");
+      await api("/account/cart", { method: "PUT", body: JSON.stringify({ cart: cabinetCart }) });
+    }
     renderCabinetCart();
   }
   function money(value){const n=Number(value);return Number.isFinite(n)&&n>0?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n)+" грн":"Ціну уточнюйте";}
