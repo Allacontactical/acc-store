@@ -1140,7 +1140,19 @@
       var cartModal=document.getElementById("cartModal"),cartItems=document.getElementById("cartItems");
       function formatCartPrice(product){var price=Number(product.price);if(!isFinite(price))return "Ціну уточнюйте";return new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price)+" грн";}
       function save(){localStorage.setItem("accCart",JSON.stringify(cart));localStorage.setItem("accFavorites",JSON.stringify(favorites));}
-      function counters(){document.getElementById("cartCount").textContent=cart.length;document.getElementById("favoritesCount").textContent=favorites.length;}
+      var accountCartCount=null;
+      function counters(){document.getElementById("cartCount").textContent=accountCartCount===null?cart.length:accountCartCount;document.getElementById("favoritesCount").textContent=favorites.length;}
+      async function refreshAccountCartCount(){
+        var token=localStorage.getItem("acc_account_session_v1");
+        if(!token){accountCartCount=null;counters();return;}
+        try{
+          var response=await fetch("/account/cart",{method:"GET",headers:{"Authorization":"Bearer "+token},cache:"no-store"});
+          if(!response.ok)throw new Error("Cart unavailable");
+          var data=await response.json(),items=data.cart&&typeof data.cart==="object"?data.cart:{};
+          accountCartCount=Object.keys(items).reduce(function(sum,id){var qty=Number(items[id]);return sum+(Number.isInteger(qty)&&qty>0?qty:0);},0);
+          counters();
+        }catch(_){accountCartCount=null;counters();}
+      }
       function renderCart(){
         allProducts=window.accProducts||allProducts;
         cartItems.textContent="";
@@ -1159,6 +1171,8 @@
         if(c){var cid=c.getAttribute("data-cart-id");if(cart.indexOf(cid)<0){cart.push(cid);c.classList.add("is-active");c.textContent="✓ Додано";save();counters();}}
       });
       counters();
+      refreshAccountCartCount();
+      window.addEventListener("focus",refreshAccountCartCount);
       var headerSearch=document.querySelector(".header-search");
       headerSearch.addEventListener("submit",function(e){var input=headerSearch.querySelector("input");if(!input.value.trim())e.preventDefault();});
     }());
