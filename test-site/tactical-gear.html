@@ -33,7 +33,7 @@ section{padding:36px 0}.section-head{margin-bottom:20px}h2{font-size:clamp(24px,
 .goog-te-banner-frame,.skiptranslate iframe{display:none!important}
 body{top:0!important}
 
-  .add-to-cart-btn{display:block;width:100%;margin:12px 0 8px;padding:11px 14px;border:1px solid #f28c28;border-radius:5px;background:#f28c28;color:#171b16;font:inherit;font-weight:700;cursor:pointer}.add-to-cart-btn:hover,.add-to-cart-btn:focus-visible{background:#ff9b38;outline:2px solid #f28c28;outline-offset:2px}.add-to-cart-btn:disabled{opacity:.65;cursor:wait}.add-to-cart-btn.is-added{background:#526b43;border-color:#526b43;color:#fff}</style>
+  .category-cart-link{white-space:nowrap;color:#f28c28!important;font-weight:700}.category-cart-link span{display:inline-flex;min-width:20px;height:20px;align-items:center;justify-content:center;padding:0 5px;border-radius:10px;background:#f28c28;color:#171b16;font-size:12px}.add-to-cart-btn{display:block;width:100%;margin:12px 0 8px;padding:11px 14px;border:1px solid #f28c28;border-radius:5px;background:#f28c28;color:#171b16;font:inherit;font-weight:700;cursor:pointer}.add-to-cart-btn:hover,.add-to-cart-btn:focus-visible{background:#ff9b38;outline:2px solid #f28c28;outline-offset:2px}.add-to-cart-btn:disabled{opacity:.65;cursor:wait}.add-to-cart-btn.is-added{background:#526b43;border-color:#526b43;color:#fff}</style>
 
   <link rel="canonical" href="https://allacontactical.com.ua/tactical-gear.html">
   <meta property="og:type" content="website">
@@ -84,7 +84,7 @@ body{top:0!important}
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
 </head>
 <body>
-<header><div class="wrap nav"><a class="logo" href="./index.html" aria-label="Allacon — на головну" style="display:inline-flex;align-items:center;line-height:0;" style="display:inline-flex;align-items:center;line-height:0;"><img src="./assets/allacon-approved-logo.jpg" alt="Allacon" width="58" height="58" style="display:block;width:58px;height:58px;object-fit:contain;"></a><nav aria-label="Головна навігація"><a href="./catalog.html">Повний каталог</a><a href="./index.html#categories">Категорії</a><a href="#products">Товари</a><a href="./index.html#contacts">Контакти</a></nav><div class="language-switcher" role="group" aria-label="Оберіть мову сайту"><button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button><button type="button" data-language="en" aria-pressed="false" title="English">EN</button><button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button></div></div></header>
+<header><div class="wrap nav"><a class="logo" href="./index.html" aria-label="Allacon — на головну" style="display:inline-flex;align-items:center;line-height:0;" style="display:inline-flex;align-items:center;line-height:0;"><img src="./assets/allacon-approved-logo.jpg" alt="Allacon" width="58" height="58" style="display:block;width:58px;height:58px;object-fit:contain;"></a><nav aria-label="Головна навігація"><a href="./catalog.html">Повний каталог</a><a href="./index.html#categories">Категорії</a><a href="#products">Товари</a><a href="./account.html" class="category-cart-link">Кошик <span id="categoryCartCount">0</span></a><a href="./index.html#contacts">Контакти</a></nav><div class="language-switcher" role="group" aria-label="Оберіть мову сайту"><button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button><button type="button" data-language="en" aria-pressed="false" title="English">EN</button><button type="button" data-language="ru" aria-pressed="false" title="Русский">RU</button></div></div></header>
 <main>
 <section class="hero"><div class="wrap"><div class="eyebrow">Каталог AllaconTactical</div><h1>Тактичний одяг та спорядження</h1><p>Функціональне екіпірування для активного руху, тренувань і польових умов.</p><a class="btn" href="./catalog.html">Увесь каталог ACC</a><a class="btn secondary" href="./index.html#categories">Інші категорії</a></div></section>
 <section><div class="wrap seo-copy"><h2>Тактичний одяг та спорядження в Україні — функціональність у польових умовах</h2>
@@ -115,6 +115,7 @@ function card(p){var a=document.createElement("article");a.className="card";a.se
 function render(){var q=(search.value||"").toLocaleLowerCase("uk-UA").trim(),sel=category.value;var list=products.filter(function(p){return allowedCategories.indexOf(mappedCategory(p))!==-1&&((p.title||"")+" "+(mappedCategory(p)||"")).toLocaleLowerCase("uk-UA").indexOf(q)!==-1&&(!sel||mappedCategory(p)===sel)});grid.textContent="";if(!list.length){var e=document.createElement("p");e.className="muted";e.textContent="У цій категорії за вашим запитом товарів не знайдено.";grid.appendChild(e)}else{var f=document.createDocumentFragment();list.forEach(function(p){f.appendChild(card(p))});grid.appendChild(f)}count.textContent="Показано товарів: "+list.length+" із "+products.length}
 fetch("./products.json").then(function(r){if(!r.ok)throw new Error("catalog");return r.json()}).then(function(data){products=Array.isArray(data)?data.filter(function(p){return allowedCategories.indexOf(mappedCategory(p))!==-1}):[];var names=[];products.forEach(function(p){if(mappedCategory(p)&&names.indexOf(mappedCategory(p))===-1)names.push(mappedCategory(p))});names.sort(function(a,b){return a.localeCompare(b,"uk")});names.forEach(function(n){var o=document.createElement("option");o.value=n;o.textContent=n;category.appendChild(o)});render()}).catch(function(){grid.textContent="";var e=document.createElement("p");e.className="muted";e.textContent="Не вдалося завантажити каталог. Відкрийте магазин на Prom.ua.";grid.appendChild(e);count.textContent="Каталог тимчасово недоступний"});
 
+async function updateCategoryCartCount(){var token=localStorage.getItem("acc_account_session_v1"),qty=0;try{if(token){var r=await fetch("/account/cart",{headers:{"Authorization":"Bearer "+token},cache:"no-store"});if(r.ok){var d=await r.json(),items=d.cart||{};Object.keys(items).forEach(function(k){qty+=Math.max(0,Number(items[k])||0);});}}else{var a=JSON.parse(localStorage.getItem("accCart")||"[]");qty=Array.isArray(a)?a.length:0;}}catch(_){}var el=document.getElementById("categoryCartCount");if(el)el.textContent=String(qty);}
 async function addCategoryProductToCart(id,button){
  var oldText=button.textContent;button.disabled=true;button.textContent="Додаємо…";
  try{
@@ -133,12 +134,13 @@ async function addCategoryProductToCart(id,button){
    var saved=await fetch("/account/cart",{method:"PUT",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({cart:cart}),cache:"no-store"});
    if(!saved.ok)throw new Error("Не вдалося зберегти кошик");
   }
-  button.textContent="Додано · "+cart[id];button.classList.add("is-added");
+  button.textContent="Додано · "+cart[id];button.classList.add("is-added");updateCategoryCartCount();
  }catch(error){button.textContent="Помилка";button.title=error.message;}
  finally{button.disabled=false;setTimeout(function(){if(button.isConnected){button.textContent="До кошика";button.classList.remove("is-added");}},2200);}
 }
 
 grid.addEventListener("click",function(event){var button=event.target.closest("[data-category-cart-id]");if(button){addCategoryProductToCart(button.getAttribute("data-category-cart-id"),button);}});
+updateCategoryCartCount();
 search.addEventListener("input",render);category.addEventListener("change",render)
 }());
 </script>
