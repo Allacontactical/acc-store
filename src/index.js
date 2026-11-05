@@ -218,9 +218,9 @@ async function handleWebhook(request, env) {
 
   let reply = "Вітаємо в AllaconTactical!\n\nНапишіть, що шукаєте, і ми допоможемо з вибором.";
   let replyMarkup;
-  const textCommand = fullText.toLocaleLowerCase("uk-UA").replace(/\\s+/g, " ").trim();
+  const textCommand = fullText.toLocaleLowerCase("uk-UA").replace(/\s+/g, " ").trim();
   if (command === "/catalog" || ["каталог", "каталог товарів", "відкрити каталог", "товари"].includes(textCommand)) {
-    reply = "Каталог AllaconTactical\\n\\nОберіть потрібну категорію:";
+    reply = "Каталог AllaconTactical\n\nОберіть потрібну категорію:";
     replyMarkup = catalogKeyboard;
   } else if (command === "/account" || ["особистий кабінет", "кабінет"].includes(textCommand)) {
     reply = "Особистий кабінет AllaconTactical:";
