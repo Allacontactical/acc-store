@@ -43,7 +43,18 @@ function openEditor(p){
  $("category").value=p?.category||"";$("description").value=p?.description||"";$("descriptionRu").value=p?.description_ru||"";
  $("editor").classList.remove("hidden");$("photoSection").classList.toggle("hidden",!editingId);
  $("photos").textContent="";
- (p?.images||[]).forEach(img=>{const el=document.createElement("img");el.alt="Фото товару";el.src=API+img.url;$("photos").append(el);});
+ (p?.images||[]).forEach((img,index)=>{
+  const wrap=document.createElement("div");wrap.style.display="grid";wrap.style.gap="4px";
+  const el=document.createElement("img");el.alt="Фото товару";el.src=API+img.url;wrap.append(el);
+  const controls=document.createElement("div");controls.className="actions";
+  const left=document.createElement("button");left.type="button";left.className="btn secondary";left.textContent="←";left.disabled=index===0;
+  left.onclick=()=>moveImage(p.id,index,-1);
+  const right=document.createElement("button");right.type="button";right.className="btn secondary";right.textContent="→";right.disabled=index===(p.images.length-1);
+  right.onclick=()=>moveImage(p.id,index,1);
+  const del=document.createElement("button");del.type="button";del.className="btn danger";del.textContent="×";del.title="Видалити фото";
+  del.onclick=()=>deleteImage(p.id,img.id);
+  controls.append(left,right,del);wrap.append(controls);$("photos").append(wrap);
+ });
  $("editor").scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function save(e){
@@ -53,6 +64,16 @@ async function save(e){
   else await api("/admin/products",{method:"POST",body:JSON.stringify(payload)});
   message("Товар збережено.");resetEditor();await load();
  }catch(err){message(err.message,true);}
+}
+async function moveImage(productId,index,delta){
+ try{const p=products.find(x=>x.id===productId);const order=(p.images||[]).map(x=>x.id);const target=index+delta;[order[index],order[target]]=[order[target],order[index]];
+ await api("/admin/products/"+productId+"/images",{method:"PATCH",body:JSON.stringify({order})});await load();openEditor(products.find(x=>x.id===productId));}
+ catch(e){message(e.message,true);}
+}
+async function deleteImage(productId,imageId){
+ if(!confirm("Видалити це фото?"))return;
+ try{await api("/admin/products/"+productId+"/images/"+imageId,{method:"DELETE"});await load();openEditor(products.find(x=>x.id===productId));}
+ catch(e){message(e.message,true);}
 }
 async function archiveProduct(id){if(!confirm("Перемістити товар в архів? Його можна буде відновити."))return;try{await api("/admin/products/"+id,{method:"DELETE"});message("Товар переміщено в архів.");await load();}catch(e){message(e.message,true);}}
 async function restoreProduct(id){try{await api("/admin/products/"+id+"/restore",{method:"POST"});message("Товар відновлено зі статусом «На перевірці».");await load();}catch(e){message(e.message,true);}}
