@@ -81,7 +81,8 @@ async function listProducts(env,url) {
   const products = [];
   for (const p of rows.results||[]) {
     const imgs = await env.DB.prepare("SELECT id,sort_order FROM acc_admin_product_images WHERE product_id=? ORDER BY sort_order,id").bind(p.id).all();
-    products.push({...p,images:(imgs.results||[]).map(x=>({id:x.id,url:"/admin/media/"+x.id,sort_order:x.sort_order}))});
+    let legacy={}; try { legacy=JSON.parse(p.legacy_json||"{}"); } catch {}
+    products.push({...p,legacy_images:Array.isArray(legacy.images)?legacy.images.filter(x=>typeof x==="string"&&/^https:\/\//i.test(x)):[],images:(imgs.results||[]).map(x=>({id:x.id,url:"/admin/media/"+x.id,sort_order:x.sort_order}))});
   }
   return products;
 }
@@ -181,12 +182,14 @@ async function handleAdmin(request,env,url,email) {
       const sig=new Uint8Array(bytes.slice(0,12));
       if (String.fromCharCode(...sig.slice(0,4))!=="RIFF" || String.fromCharCode(...sig.slice(8,12))!=="WEBP") return json({error:"Invalid WebP file"},400);
       const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM acc_admin_product_images WHERE product_id=?").bind(id).first();
-      if ((count?.n||0)>=10) return json({error:"Maximum 10 photos per product"},400);
+      const current=await env.DB.prepare("SELECT legacy_json FROM acc_admin_products WHERE id=?").bind(id).first();
+      let legacyCount=0; try { legacyCount=JSON.parse(current?.legacy_json||"{}").images?.filter(x=>typeof x==="string").length||0; } catch {}
+      if ((count?.n||0)+legacyCount>=10) return json({error:"Maximum 10 photos per product, including imported photos"},400);
       const imageId=uid(), key="products/"+id+"/"+imageId+".webp";
       await env.PRODUCT_IMAGES.put(key,bytes,{httpMetadata:{contentType:"image/webp",cacheControl:"public, max-age=31536000, immutable"}});
       try {
         await env.DB.prepare("INSERT INTO acc_admin_product_images (id,product_id,object_key,content_type,byte_size,sort_order) VALUES (?,?,?,?,?,?)")
-          .bind(imageId,id,key,"image/webp",file.size,count?.n||0).run();
+          .bind(imageId,id,key,"image/webp",file.size,(count?.n||0)+legacyCount).run();
       } catch(e) { await env.PRODUCT_IMAGES.delete(key); throw e; }
       await audit(env,email,"image_upload",id,{imageId,bytes:file.size});
       return json({id:imageId},201);
