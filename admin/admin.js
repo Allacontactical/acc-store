@@ -103,16 +103,46 @@ async function uploadPhotos(files){
  }catch(e){message(e.message,true);}
 }
 function parsePromCSV(text){
- const rows=[];let row=[],field="",quoted=false;
+ text=String(text||"").replace(/^\\uFEFF/,"");
+ const counts={",":0,";":0,"\\t":0};let inHeaderQuote=false;
  for(let i=0;i<text.length;i++){
   const ch=text[i];
-  if(quoted){if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}else if(ch==='"')quoted=false;else field+=ch;continue;}
-  if(ch==='"'){quoted=true;continue;}
-  if(ch===","){row.push(field);field="";continue;}
-  if(ch==="\r"||ch==="\n"){if(ch==="\r"&&text[i+1]==="\n")i++;row.push(field);field="";if(row.some(x=>x!==""))rows.push(row);row=[];continue;}
+  if(ch==='"'&&inHeaderQuote&&text[i+1]==='"'){i++;continue;}
+  if(ch==='"'){inHeaderQuote=!inHeaderQuote;continue;}
+  if(!inHeaderQuote&&(ch==="\\r"||ch==="\\n"))break;
+  if(!inHeaderQuote&&Object.prototype.hasOwnProperty.call(counts,ch))counts[ch]++;
+ }
+ const delimiter=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
+ if(!counts[delimiter])throw new Error("Не вдалося визначити роздільник CSV. Перевірте файл експорту.");
+ const rows=[];let row=[],field="",quoted=false,closedQuote=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(quoted){
+   if(ch==='"'&&text[i+1]==='"'){field+='"';i++;}
+   else if(ch==='"'){quoted=false;closedQuote=true;}
+   else field+=ch;
+   continue;
+  }
+  if(ch==='"'){
+   if(field.length===0&&!closedQuote)quoted=true;
+   else throw new Error("Некоректні лапки в CSV біля символу "+(i+1)+". Перезбережіть файл у форматі CSV UTF-8.");
+   continue;
+  }
+  if(ch===delimiter){row.push(field);field="";closedQuote=false;continue;}
+  if(ch==="\\r"||ch==="\\n"){
+   if(ch==="\\r"&&text[i+1]==="\\n")i++;
+   row.push(field);field="";closedQuote=false;
+   if(row.some(x=>x!==""))rows.push(row);
+   row=[];continue;
+  }
+  if(closedQuote){
+   if(ch===" "||ch==="\\t")continue;
+   throw new Error("Після закривальної лапки CSV знайдено зайві символи біля позиції "+(i+1)+".");
+  }
   field+=ch;
  }
- if(field!==""||row.length){row.push(field);rows.push(row);}
+ if(quoted)throw new Error("CSV містить незакриті лапки. Перезбережіть експорт Prom у форматі CSV UTF-8.");
+ if(field!==""||row.length){row.push(field);if(row.some(x=>x!==""))rows.push(row);}
  return rows;
 }
 function promPlainText(value){
@@ -145,13 +175,22 @@ function promRowsFromCSV(text){
  return {items,total:rows.length-1,skipped};
 }
 async function stagePromCSV(){
- const file=$("promFile").files?.[0];if(!file){$("promImportStatus").textContent="Спочатку виберіть CSV-файл Prom.ua.";return;}
+ const file=$("promFile").files?.[0];if(!file){$("promImportStatus").textContent="Спочатку виберіть CSV або XLSX-файл Prom.ua.";return;}
  if(file.size>15*1024*1024){$("promImportStatus").textContent="Файл завеликий. Максимум 15 МБ.";return;}
  const button=$("stagePromImport");button.disabled=true;
  try{
-  $("promImportStatus").textContent="Читаю CSV та перевіряю рядки…";
-  const buffer=await file.arrayBuffer();let decoded=new TextDecoder("utf-8").decode(buffer);
-  if(decoded.includes("�"))decoded=new TextDecoder("windows-1251").decode(buffer);
+  $("promImportStatus").textContent="Читаю файл та перевіряю рядки…";
+  const buffer=await file.arrayBuffer();let decoded="";
+  if(/\\.xlsx$/i.test(file.name)){
+   if(!window.XLSX)throw new Error("Не завантажився модуль XLSX. Перевірте інтернет-з’єднання та повторіть спробу або завантажте CSV.");
+   const workbook=window.XLSX.read(buffer,{type:"array",cellDates:false});
+   const firstSheet=workbook.SheetNames[0];
+   if(!firstSheet)throw new Error("У XLSX-файлі немає аркушів.");
+   decoded=window.XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet],{FS:",",RS:"\\n"});
+  }else{
+   decoded=new TextDecoder("utf-8").decode(buffer);
+   if(decoded.includes("�"))decoded=new TextDecoder("windows-1251").decode(buffer);
+  }
   const parsed=promRowsFromCSV(decoded);
   if(!parsed.items.length)throw new Error("Не знайдено товарів із числовим ID та назвою. Перевірте формат експорту.");
   $("promImportStatus").textContent="Передаю "+parsed.items.length+" товарів у чергу перевірки…";
