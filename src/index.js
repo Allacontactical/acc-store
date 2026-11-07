@@ -223,98 +223,44 @@ async function handleAdminImport(request, env, user) {
   }
 }
 
-async function githubApi(path, token, method = "GET", body = null) {
-  const response = await fetch("https://api.github.com" + path, {
-    method,
-    headers: {
-      "Accept": "application/vnd.github+json",
-      "Authorization": "Bearer " + token,
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(body ? { "Content-Type": "application/json" } : {})
-    },
-    ...(body ? { body: JSON.stringify(body) } : {})
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error("GitHub API " + response.status + ": " + String(data.message || "request failed").slice(0, 300));
-  return data;
-}
-function decodeBase64Utf8(value) {
-  const binary = atob(String(value || "").replace(/\s/g, ""));
-  const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-function encodeUtf8Base64(value) {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-  }
-  return btoa(binary);
-}
-function buildPublishedProduct(item, existing) {
+
+function buildPublishedProduct(item) {
   let raw = {}; let images = [];
   try { raw = JSON.parse(item.raw_json || "{}"); } catch { raw = {}; }
   try { images = JSON.parse(item.image_urls_json || "[]"); } catch { images = []; }
   const priceText = String(item.price || "").trim().replace(/\s/g, "").replace(",", ".");
-  const parsedPrice = Number(priceText);
+  const parsedPrice = priceText ? Number(priceText) : NaN;
   const availability = String(item.raw_availability || "").trim();
   const availabilityLower = availability.toLocaleLowerCase("uk-UA");
   const category = raw["Назва_групи"] || raw["Назва_групи_укр"] || raw["Група_товару"] || raw["Категорія"] || raw["Група"] || "";
+  const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
   const product = {
-    ...(existing || {}),
-    id: item.public_product_id || item.product_id || "",
-    title: item.title || existing?.title || "",
-    price: Number.isFinite(parsedPrice) ? parsedPrice : (existing?.price ?? null),
-    currency: item.currency || existing?.currency || "UAH",
-    category: category || existing?.category || "",
-    image: images[0] || existing?.image || "",
-    images: images.length ? images : (existing?.images || (existing?.image ? [existing.image] : [])),
-    url: item.prom_url || existing?.url || "https://allacontactical.prom.ua/",
-    availability: availability || existing?.availability || "Уточнюйте актуальну наявність у фахівця ACC",
-    description: raw["Опис_позиції_укр"] || raw["Опис"] || existing?.description || "",
-    description_ru: raw["Опис_позиції"] || raw["Опис_позиції_рос"] || existing?.description_ru || ""
+    id: publicId, title: item.title || "",
+    price: Number.isFinite(parsedPrice) ? parsedPrice : null,
+    currency: item.currency || "UAH", category,
+    image: images[0] || "", images,
+    url: item.prom_url || "https://allacontactical.prom.ua/",
+    availability: availability || "Уточнюйте актуальну наявність у фахівця ACC",
+    description: raw["Опис_позиції_укр"] || raw["Опис"] || "",
+    description_ru: raw["Опис_позиції"] || raw["Опис_позиції_рос"] || ""
   };
-  if (raw["Бренд"] || existing?.brand) product.brand = raw["Бренд"] || existing.brand;
+  if (raw["Бренд"]) product.brand = raw["Бренд"];
   if (/очіку|ожида|expected/.test(availabilityLower)) product.availability_status = "expected";
   return product;
 }
-async function publishApprovedProduct(env, item) {
+async function dispatchCatalogPublish(env, item, product) {
   const token = env.GITHUB_CONTENTS_TOKEN;
   if (!token) throw new Error("Не настроен секрет GITHUB_CONTENTS_TOKEN для публикации в каталог.");
-  const owner = "Allacontactical", repo = "acc-store", branch = "main";
-  const ref = await githubApi("/repos/" + owner + "/" + repo + "/git/ref/heads/" + branch, token);
-  const parentSha = ref.object.sha;
-  const commit = await githubApi("/repos/" + owner + "/" + repo + "/git/commits/" + parentSha, token);
-  const tree = await githubApi("/repos/" + owner + "/" + repo + "/git/trees/" + commit.tree.sha, token);
-  const productEntry = (tree.tree || []).find(entry => entry.path === "products.json" && entry.type === "blob");
-  if (!productEntry) throw new Error("Не найден products.json в корне репозитория.");
-  const blob = await githubApi("/repos/" + owner + "/" + repo + "/git/blobs/" + productEntry.sha, token);
-  const products = JSON.parse(decodeBase64Utf8(blob.content));
-  if (!Array.isArray(products)) throw new Error("Файл products.json имеет неверный формат.");
-  const publicId = item.product_id || String(9000000000000000n + BigInt(item.id));
-  const index = products.findIndex(product => String(product.id) === String(publicId));
-  const product = buildPublishedProduct({ ...item, public_product_id: publicId }, index >= 0 ? products[index] : null);
-  if (index >= 0) products[index] = product;
-  else products.push(product);
-  const newBlob = await githubApi("/repos/" + owner + "/" + repo + "/git/blobs", token, "POST", {
-    content: encodeUtf8Base64(JSON.stringify(products, null, 2)), encoding: "base64"
+  const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
+    method: "POST",
+    headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token,
+      "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+    body: JSON.stringify({ event_type: "acc-publish-product", client_payload: { item_id: item.id, product } })
   });
-  const newTree = await githubApi("/repos/" + owner + "/" + repo + "/git/trees", token, "POST", {
-    base_tree: commit.tree.sha,
-    tree: [{ path: "products.json", mode: "100644", type: "blob", sha: newBlob.sha }]
-  });
-  const newCommit = await githubApi("/repos/" + owner + "/" + repo + "/git/commits", token, "POST", {
-    message: "Publish ACC product " + publicId,
-    tree: newTree.sha,
-    parents: [parentSha]
-  });
-  await githubApi("/repos/" + owner + "/" + repo + "/git/refs/heads/" + branch, token, "PATCH", {
-    sha: newCommit.sha,
-    force: false
-  });
-  await env.DB.prepare("UPDATE import_items SET is_published = 1, public_product_id = ? WHERE id = ?")
-    .bind(publicId, item.id).run();
-  return { public_product_id: publicId, commit: newCommit.sha, updated: index >= 0 };
+  if (response.status !== 204) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error("GitHub dispatch " + response.status + ": " + String(detail.message || "request failed").slice(0, 250));
+  }
 }
 
 async function handleAdmin(request, env, url) {
@@ -322,19 +268,27 @@ async function handleAdmin(request, env, url) {
   if (!user) return json({ error: "Forbidden" }, 403);
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
 
+
   if (url.pathname === "/admin/import/publish" && request.method === "POST") {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const id = Number(payload?.id);
     if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
-    const item = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status, public_product_id FROM import_items WHERE id = ?").bind(id).first();
+    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
     if (!item) return json({ error: "Item not found" }, 404);
     if (item.review_status !== "approved") return json({ error: "Сначала одобрите товар" }, 409);
+    if (item.publish_status === "queued") return json({ error: "Публикация этой позиции уже выполняется" }, 409);
+    const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
+    const duplicate = await env.DB.prepare("SELECT id FROM import_items WHERE id <> ? AND public_product_id = ? LIMIT 1").bind(id, publicId).first();
+    if (duplicate) return json({ error: "Этот ID уже закреплён за позицией №" + duplicate.id }, 409);
+    const product = buildPublishedProduct({ ...item, public_product_id: publicId });
+    await env.DB.prepare("UPDATE import_items SET public_product_id = ?, publish_status = 'queued' WHERE id = ?").bind(publicId, id).run();
     try {
-      const result = await publishApprovedProduct(env, item);
-      return json({ ok: true, id, ...result, published: true });
+      await dispatchCatalogPublish(env, item, product);
+      return json({ ok: true, id, public_product_id: publicId, publish_status: "queued" }, 202);
     } catch (error) {
-      return json({ error: "Не удалось опубликовать товар", detail: String(error.message || error).slice(0, 500) }, 502);
+      await env.DB.prepare("UPDATE import_items SET publish_status = 'failed' WHERE id = ?").bind(id).run();
+      return json({ error: "Не удалось запустить публикацию", detail: String(error.message || error).slice(0, 400) }, 502);
     }
   }
 
@@ -415,7 +369,7 @@ async function handleAdmin(request, env, url) {
   if (url.pathname === "/admin/import/items" && request.method === "GET") {
     const batchId = url.searchParams.get("batch_id") || "";
     if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
-    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, review_note, created_at, is_published, public_product_id FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, review_note, created_at, is_published, public_product_id, publish_status, publish_commit_sha FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
     return json({ items: result.results || [] });
   }
   if (url.pathname === "/admin/import/item" && request.method === "PATCH") {
@@ -584,6 +538,21 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
+
+    if (url.pathname === "/internal/publish-callback" && request.method === "POST") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.GITHUB_CONTENTS_TOKEN || supplied !== env.GITHUB_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      let payload;
+      try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const id = Number(payload?.id);
+      if (!Number.isInteger(id) || id < 1 || typeof payload.success !== "boolean") return json({ error: "Invalid callback payload" }, 400);
+      const status = payload.success ? "published" : "failed";
+      const result = await env.DB.prepare("UPDATE import_items SET is_published = CASE WHEN ? = 1 THEN 1 ELSE is_published END, publish_status = ?, publish_commit_sha = ? WHERE id = ?")
+        .bind(payload.success ? 1 : 0, status, String(payload.commit_sha || "").slice(0, 80), id).run();
+      if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+      return json({ ok: true, id, publish_status: status });
+    }
+
     if (url.pathname.startsWith("/admin/")) return withCors(await handleAdmin(request, env, url), request);
     if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
         (request.method === "PUT" && url.pathname === "/account/cart") ||

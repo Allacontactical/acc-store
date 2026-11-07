@@ -1,0 +1,73 @@
+name: Publish approved ACC product
+
+on:
+  repository_dispatch:
+    types:
+      - acc-publish-product
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production catalog
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Update products.json
+        id: publish
+        env:
+          PRODUCT_JSON: ${{ toJson(github.event.client_payload.product) }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const { execFileSync } = require('node:child_process');
+          const product = JSON.parse(process.env.PRODUCT_JSON || 'null');
+          if (!product || !/^[0-9]{1,20}$/.test(String(product.id))) throw new Error('Invalid product payload');
+          const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+          if (!Array.isArray(products)) throw new Error('products.json must contain an array');
+          const index = products.findIndex(item => String(item.id) === String(product.id));
+          if (index >= 0) products[index] = { ...products[index], ...product };
+          else products.push(product);
+          fs.writeFileSync('products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');
+          execFileSync('git', ['config', 'user.name', 'github-actions[bot]']);
+          execFileSync('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
+          execFileSync('git', ['add', 'products.json']);
+          let commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          try {
+            execFileSync('git', ['diff', '--cached', '--quiet']);
+          } catch {
+            execFileSync('git', ['commit', '-m', 'Publish ACC product ' + product.id]);
+            execFileSync('git', ['push', 'origin', 'HEAD:main']);
+            commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'commit_sha=' + commit + '\n');
+          NODE
+      - name: Confirm publication in ACC admin database
+        if: always()
+        env:
+          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
+          ITEM_ID: ${{ github.event.client_payload.item_id }}
+          SUCCESS: ${{ steps.publish.outcome == 'success' }}
+          COMMIT_SHA: ${{ steps.publish.outputs.commit_sha }}
+        run: |
+          test -n "$ITEM_ID" || exit 0
+          node <<'NODE'
+          (async () => {
+            const response = await fetch('https://allacontactical-bot.allacontactical.workers.dev/internal/publish-callback', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + process.env.GITHUB_CONTENTS_TOKEN, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: Number(process.env.ITEM_ID),
+                success: process.env.SUCCESS === 'true',
+                commit_sha: process.env.COMMIT_SHA || ''
+              })
+            });
+            if (!response.ok) throw new Error('Callback failed: ' + response.status + ' ' + await response.text());
+            console.log(await response.text());
+          })().catch(error => { console.error(error); process.exit(1); });
+          NODE

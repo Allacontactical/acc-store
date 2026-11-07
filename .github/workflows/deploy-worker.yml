@@ -36,7 +36,6 @@ jobs:
         shell: bash
         env:
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
-          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
         run: |
           test -n "$ADMIN_TELEGRAM_ID" || { echo "Missing GitHub Actions secret ADMIN_TELEGRAM_ID"; exit 1; }
           echo "Admin Telegram ID secret is configured."
@@ -71,6 +70,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
+          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
       - name: Verify production account redirect
         shell: bash
