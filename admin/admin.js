@@ -103,13 +103,13 @@ async function uploadPhotos(files){
  }catch(e){message(e.message,true);}
 }
 function parsePromCSV(text){
- text=String(text||"").replace(/^\\uFEFF/,"");
- const counts={",":0,";":0,"\\t":0};let inHeaderQuote=false;
+ text=String(text||"").replace(/^\uFEFF/,"");
+ const counts={",":0,";":0,"\t":0};let inHeaderQuote=false;
  for(let i=0;i<text.length;i++){
   const ch=text[i];
   if(ch==='"'&&inHeaderQuote&&text[i+1]==='"'){i++;continue;}
   if(ch==='"'){inHeaderQuote=!inHeaderQuote;continue;}
-  if(!inHeaderQuote&&(ch==="\\r"||ch==="\\n"))break;
+  if(!inHeaderQuote&&(ch==="\r"||ch==="\n"))break;
   if(!inHeaderQuote&&Object.prototype.hasOwnProperty.call(counts,ch))counts[ch]++;
  }
  const delimiter=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0];
@@ -129,14 +129,14 @@ function parsePromCSV(text){
    continue;
   }
   if(ch===delimiter){row.push(field);field="";closedQuote=false;continue;}
-  if(ch==="\\r"||ch==="\\n"){
-   if(ch==="\\r"&&text[i+1]==="\\n")i++;
+  if(ch==="\r"||ch==="\n"){
+   if(ch==="\r"&&text[i+1]==="\n")i++;
    row.push(field);field="";closedQuote=false;
    if(row.some(x=>x!==""))rows.push(row);
    row=[];continue;
   }
   if(closedQuote){
-   if(ch===" "||ch==="\\t")continue;
+   if(ch===" "||ch==="\t")continue;
    throw new Error("Після закривальної лапки CSV знайдено зайві символи біля позиції "+(i+1)+".");
   }
   field+=ch;
@@ -181,12 +181,12 @@ async function stagePromCSV(){
  try{
   $("promImportStatus").textContent="Читаю файл та перевіряю рядки…";
   const buffer=await file.arrayBuffer();let decoded="";
-  if(/\\.xlsx$/i.test(file.name)){
+  if(/\.xlsx$/i.test(file.name)){
    if(!window.XLSX)throw new Error("Не завантажився модуль XLSX. Перевірте інтернет-з’єднання та повторіть спробу або завантажте CSV.");
    const workbook=window.XLSX.read(buffer,{type:"array",cellDates:false});
    const firstSheet=workbook.SheetNames[0];
    if(!firstSheet)throw new Error("У XLSX-файлі немає аркушів.");
-   decoded=window.XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet],{FS:",",RS:"\\n"});
+   decoded=window.XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheet],{FS:",",RS:"\n"});
   }else{
    decoded=new TextDecoder("utf-8").decode(buffer);
    if(decoded.includes("�"))decoded=new TextDecoder("windows-1251").decode(buffer);
