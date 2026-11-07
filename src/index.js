@@ -304,7 +304,7 @@ async function handleAdmin(request, env, url) {
   if (url.pathname === "/admin/import/items" && request.method === "GET") {
     const batchId = url.searchParams.get("batch_id") || "";
     if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
-    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, review_status, review_note, created_at FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, review_note, created_at FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
     return json({ items: result.results || [] });
   }
   if (url.pathname === "/admin/import/item" && request.method === "PATCH") {
@@ -321,6 +321,9 @@ async function handleAdmin(request, env, url) {
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const id = Number(payload?.id);
     const title = String(payload?.title || "").trim().slice(0, 500);
+    const brand = String(payload?.brand || "").trim().slice(0, 120);
+    const category = String(payload?.category || "").trim().slice(0, 160);
+    const description = String(payload?.description || "").trim().slice(0, 12000);
     const price = String(payload?.price ?? "").trim().slice(0, 40);
     const currency = String(payload?.currency || "").trim().slice(0, 12);
     const quantity = String(payload?.quantity ?? "").trim().slice(0, 40);
@@ -338,6 +341,10 @@ async function handleAdmin(request, env, url) {
     try { raw = JSON.parse(existing.raw_json || "{}"); } catch { raw = {}; }
     raw["Назва_позиції"] = title;
     raw["Назва_позиції_укр"] = title;
+    raw["Бренд"] = brand;
+    raw["Категорія"] = category;
+    raw["Опис"] = description;
+    raw["Опис_позиції_укр"] = description;
     raw["Ціна"] = price;
     raw["Валюта"] = currency;
     raw["Кількість"] = quantity;
