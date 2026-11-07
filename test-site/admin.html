@@ -27,6 +27,25 @@ small{color:var(--muted)}@media(max-width:600px){main{width:96%;margin-top:14px}
 <div class="panel"><h2>Импорт Prom XLSX</h2><p class="muted">Исходная Excel-выгрузка читается в браузере и передаётся в закрытую очередь проверки. Публичный каталог не меняется.</p>
 <div class="row"><input id="csvFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"><button id="uploadBtn" disabled>Загрузить в очередь проверки</button></div>
 <div class="notice">Правило наличия: исходные значения Prom сохраняются как есть. Код «+» и цифровые коды не преобразуются автоматически в «В наличии» или «Ожидается».</div><p id="uploadMsg" class="muted"></p></div>
+<div class="panel">
+ <h2>Добавить товар вручную</h2>
+ <p class="muted">Создаёт новую позицию в закрытой очереди. Фото с компьютера автоматически преобразуются в WebP. Публикация не выполняется.</p>
+ <form id="manualForm">
+  <div class="edit-grid">
+   <label class="edit-wide">Название товара<input id="manualTitle" maxlength="500" required></label>
+   <label>Бренд<input id="manualBrand" maxlength="120"></label>
+   <label>Категория<input id="manualCategory" maxlength="160"></label>
+   <label>Цена<input id="manualPrice" maxlength="40" required></label>
+   <label>Валюта<input id="manualCurrency" maxlength="12" value="UAH"></label>
+   <label>Количество<input id="manualQuantity" maxlength="40" placeholder="Пусто, если под заказ"></label>
+   <label>Наличие<select id="manualAvailability"><option value="Під замовлення">Под заказ</option><option value="В наявності">В наличии</option><option value="Очікується">Ожидается</option></select></label>
+   <label class="edit-wide">Описание<textarea id="manualDescription" maxlength="12000"></textarea></label>
+   <label class="edit-wide">Фотографии с компьютера (до 10 файлов)<input id="manualPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label>
+  </div>
+  <div class="row"><button id="manualSubmit" type="submit">Добавить в очередь проверки</button></div>
+  <p id="manualMsg" class="muted"></p>
+ </form>
+</div>
 <div class="panel"><div class="row" style="justify-content:space-between"><h2>Пакеты импорта</h2><button id="refreshBatches" class="secondary">Обновить</button></div><div id="batches" class="muted">Пока нет загруженных пакетов.</div></div>
 <div class="panel"><div class="row" style="justify-content:space-between"><h2>Очередь проверки</h2><span id="queueMeta" class="muted"></span></div><div id="items" class="muted">Выберите пакет импорта.</div></div>
 </section>
@@ -35,6 +54,9 @@ small{color:var(--muted)}@media(max-width:600px){main{width:96%;margin-top:14px}
   <h2>Редактировать товар в очереди</h2>
   <div class="edit-grid">
    <label class="edit-wide">Название<input id="editTitle" maxlength="500" required></label>
+   <label>Бренд<input id="editBrand" maxlength="120"></label>
+   <label>Категория<input id="editCategory" maxlength="160"></label>
+   <label class="edit-wide">Описание<textarea id="editDescription" maxlength="12000"></textarea></label>
    <label>Цена<input id="editPrice" maxlength="40"></label>
    <label>Валюта<input id="editCurrency" maxlength="12"></label>
    <label>Количество<input id="editQuantity" maxlength="40" placeholder="Оставьте пустым, если под заказ"></label>
@@ -59,7 +81,10 @@ let editingItemId=0;
 function openEditor(item){
  editingItemId=item.id;
  let urls=[];try{urls=JSON.parse(item.image_urls_json||"[]")}catch(_){}
- $("editTitle").value=item.title||"";$("editPrice").value=item.price||"";$("editCurrency").value=item.currency||"UAH";
+ let raw={};try{raw=JSON.parse(item.raw_json||"{}")}catch(_){}
+ $("editTitle").value=item.title||"";$("editBrand").value=raw["Бренд"]||"";$("editCategory").value=raw["Категорія"]||"";
+ $("editDescription").value=raw["Опис"]||raw["Опис_позиції_укр"]||"";
+ $("editPrice").value=item.price||"";$("editCurrency").value=item.currency||"UAH";
  $("editQuantity").value=item.quantity??"";$("editAvailability").value=item.raw_availability||"";
  $("editPromUrl").value=item.prom_url||"";$("editImages").value=urls.join("\n");msg("editMsg","");
  $("editDialog").showModal();
@@ -67,9 +92,44 @@ function openEditor(item){
 $("cancelEdit").onclick=()=>$("editDialog").close();
 $("editForm").onsubmit=async e=>{
  e.preventDefault();const images=$("editImages").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
- const payload={id:editingItemId,title:$("editTitle").value,price:$("editPrice").value,currency:$("editCurrency").value,quantity:$("editQuantity").value,raw_availability:$("editAvailability").value,prom_url:$("editPromUrl").value,images};
+ const payload={id:editingItemId,title:$("editTitle").value,brand:$("editBrand").value,category:$("editCategory").value,description:$("editDescription").value,price:$("editPrice").value,currency:$("editCurrency").value,quantity:$("editQuantity").value,raw_availability:$("editAvailability").value,prom_url:$("editPromUrl").value,images};
  try{await api("/admin/import/item",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});$("editDialog").close();await loadItems(selectedBatch);msg("uploadMsg","Изменения сохранены. Товар возвращён на повторную проверку.");}
  catch(err){msg("editMsg","Не удалось сохранить: "+err.message);}
+};
+async function convertToWebP(file){
+ if(!window.createImageBitmap)throw new Error("Браузер не поддерживает обработку фото. Откройте админку в актуальном Chrome.");
+ const bitmap=await createImageBitmap(file);
+ const scale=Math.min(1,2200/Math.max(bitmap.width,bitmap.height));
+ const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+ const ctx=canvas.getContext("2d");ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);if(bitmap.close)bitmap.close();
+ const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error("Не удалось преобразовать фото в WebP")),"image/webp",0.86));
+ if(blob.size>8*1024*1024)throw new Error("После обработки фото превышает 8 МБ.");
+ return new File([blob],file.name.replace(/\.[^.]+$/,"")+".webp",{type:"image/webp"});
+}
+$("manualForm").onsubmit=async e=>{
+ e.preventDefault();const btn=$("manualSubmit");btn.disabled=true;let uploaded=[];
+ try{
+  const files=Array.from($("manualPhotos").files||[]);if(files.length>10)throw new Error("Можно добавить не более 10 фотографий.");
+  let images=[];
+  if(files.length){
+   msg("manualMsg","Подготавливаю и оптимизирую фотографии…");
+   const form=new FormData();for(const file of files)form.append("files",await convertToWebP(file));
+   msg("manualMsg","Загружаю фотографии в защищённое хранилище…");
+   const result=await api("/admin/images",{method:"POST",body:form});images=result.images||[];uploaded=images;
+  }
+  msg("manualMsg","Добавляю товар в закрытую очередь…");
+  const data=await api("/admin/manual-product",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+   title:$("manualTitle").value,brand:$("manualBrand").value,category:$("manualCategory").value,
+   description:$("manualDescription").value,price:$("manualPrice").value,currency:$("manualCurrency").value,
+   quantity:$("manualQuantity").value,availability:$("manualAvailability").value,images
+  })});
+  $("manualForm").reset();$("manualCurrency").value="UAH";
+  msg("manualMsg","Товар добавлен в очередь на проверку. Фотографий: "+images.length+". Публикация не выполнялась.");
+  await loadBatches();await loadItems(data.batch_id);
+ }catch(err){
+  if(uploaded.length){const keys=uploaded.map(u=>new URL(u).pathname.split("/").pop());try{await api("/admin/images",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({keys})});}catch(_){}}
+  msg("manualMsg","Не удалось добавить товар: "+err.message);
+ }finally{btn.disabled=false;}
 };
 function showWorkspace(){ $("login").classList.add("hidden");$("workspace").classList.remove("hidden");$("logout").classList.remove("hidden");loadBatches();}
 function showLogin(){ $("login").classList.remove("hidden");$("workspace").classList.add("hidden");$("logout").classList.add("hidden");}
