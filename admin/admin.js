@@ -169,7 +169,9 @@ function promRowsFromCSV(text){
    source_product_id:sourceId,title:title.slice(0,250),price,currency:get(row,"Валюта")||"UAH",
    category:get(row,"Назва_групи"),description:promPlainText(get(row,"Опис_укр")||get(row,"Опис")),
    description_ru:promPlainText(get(row,"Опис")),images,url,
-   availability:get(row,"Наявність")
+   quantity:get(row,"Кількість")===""?null:Number(get(row,"Кількість")),
+   availability:get(row,"Наявність"),
+   delivery_days:/^\\d{1,3}$/.test(get(row,"Наявність"))?Number(get(row,"Наявність")):null
   });
  }
  return {items,total:rows.length-1,skipped};
@@ -209,7 +211,10 @@ async function loadReviewQueue(){
   items.forEach(item=>{
    const card=document.createElement("article");card.className="item";
    const info=document.createElement("div"),h=document.createElement("h3"),meta=document.createElement("p");
-   h.textContent=item.title;meta.textContent="Prom ID: "+item.source_product_id+" · "+(item.existing_product_id?"Товар уже є в ACC":"Новий товар")+" · "+(item.payload?.price==null?"Ціна не вказана":item.payload.price+" "+(item.payload.currency||"UAH"))+" · "+(item.payload?.images?.length||0)+" фото";
+   const payload=item.payload||{};
+   const delivery=Number.isFinite(payload.delivery_days)?"Під замовлення · "+payload.delivery_days+" дн.":payload.availability==="+"?"В наявності":payload.availability==="-"?"Немає в наявності":payload.availability==="&"?"Очікується":"Наявність не вказана";
+   const quantity=Number.isFinite(payload.quantity)?"Кількість: "+payload.quantity:"Кількість не вказана";
+   h.textContent=item.title;meta.textContent="Prom ID: "+item.source_product_id+" · "+(item.existing_product_id?"Товар уже є в ACC":"Новий товар")+" · "+(payload.price==null?"Ціна не вказана":payload.price+" "+(payload.currency||"UAH"))+" · "+delivery+" · "+quantity+" · "+(payload.images?.length||0)+" фото";
    info.append(h,meta);const actions=document.createElement("div");actions.className="actions";
    const approve=document.createElement("button");approve.className="btn";approve.textContent="Підтвердити";
    approve.onclick=()=>reviewPromItem(item.id,"approve");
