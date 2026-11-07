@@ -243,11 +243,16 @@ function buildPublishedProduct(item) {
   if (images.length) { product.image = images[0]; product.images = images; }
   if (item.prom_url) product.url = item.prom_url;
   if (availability) product.availability = availability;
-  const description = raw["Опис_позиції_укр"] || raw["Опис"] || "";
-  const descriptionRu = raw["Опис_позиції"] || raw["Опис_позиції_рос"] || "";
+  // Prom exports use Опис_укр for Ukrainian text and Опис for Russian text.
+  // Keep legacy aliases for older/manual imports without overwriting source values.
+  const description = raw["Опис_укр"] || raw["Опис_позиції_укр"] || raw["Опис"] || "";
+  const descriptionRu = raw["Опис"] || raw["Опис_позиції"] || raw["Опис_позиції_рос"] || "";
   if (description) product.description = description;
   if (descriptionRu) product.description_ru = descriptionRu;
-  if (raw["Бренд"]) product.brand = raw["Бренд"];
+  const brand = raw["Виробник"] || raw["Бренд"] || "";
+  if (brand) product.brand = brand;
+  // Quantity is retained as supplied; blank stays blank and is not converted to zero.
+  if (item.quantity !== "" && item.quantity != null) product.quantity = String(item.quantity);
   product.availability_status = /очіку|ожида|expected/.test(availabilityLower) ? "expected" : "";
   return product;
 }
@@ -412,8 +417,14 @@ async function handleAdmin(request, env, url) {
     raw["Назва_позиції"] = title;
     raw["Назва_позиції_укр"] = title;
     raw["Бренд"] = brand;
+    raw["Виробник"] = brand;
     raw["Категорія"] = category;
-    raw["Опис"] = description;
+    if (category) {
+      raw["Назва_групи"] = category;
+      raw["Назва_групи_укр"] = category;
+    }
+    // The editor changes the Ukrainian description only; preserve the Russian source text.
+    raw["Опис_укр"] = description;
     raw["Опис_позиції_укр"] = description;
     raw["Ціна"] = price;
     raw["Валюта"] = currency;
