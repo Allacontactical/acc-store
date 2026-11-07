@@ -10,8 +10,8 @@ const parserSandbox=vm.createContext({});
 vm.runInContext(adminSource.slice(parserStart,parserEnd)+"\nglobalThis.parsePromCSV=parsePromCSV;globalThis.promRowsFromCSV=promRowsFromCSV;",parserSandbox);
 
 const csv=[
-  '"Код_товару","Назва_позиції","Назва_позиції_укр","Опис","Опис_укр","Ціна","Валюта","Посилання_зображення","Наявність","Назва_групи","Продукт_на_сайті","Ідентифікатор_товару"',
-  '"","Test pants","Тестові штани","<p>Russian description</p>","<p>Український опис</p>\n<p>Другий рядок</p>","4 300","UAH","https://images.prom.ua/one.jpg;https://images.prom.ua/two.jpg","В наличии","Мисливські штани","https://allacontactical.prom.ua/p1234567890-test.html","1234567890"'
+  '"Код_товару","Назва_позиції","Назва_позиції_укр","Опис","Опис_укр","Ціна","Валюта","Посилання_зображення","Наявність","Кількість","Назва_групи","Продукт_на_сайті","Ідентифікатор_товару"',
+  '"","Test pants","Тестові штани","<p>Russian description</p>","<p>Український опис</p>\n<p>Другий рядок</p>","4 300","UAH","https://images.prom.ua/one.jpg;https://images.prom.ua/two.jpg","14","3","Мисливські штани","https://allacontactical.prom.ua/p1234567890-test.html","1234567890"'
 ].join("\n");
 const result=parserSandbox.promRowsFromCSV(csv);
 assert.equal(result.items.length,1);
@@ -19,6 +19,9 @@ assert.equal(result.skipped,0);
 assert.equal(result.items[0].source_product_id,"1234567890");
 assert.equal(result.items[0].title,"Тестові штани");
 assert.equal(result.items[0].price,4300);
+assert.equal(result.items[0].quantity,3);
+assert.equal(result.items[0].availability,"14");
+assert.equal(result.items[0].delivery_days,14);
 assert.equal(result.items[0].images.length,2);
 assert.equal(result.items[0].description,"Український опис\n\nДругий рядок");
 assert.equal(result.items[0].description_ru,"Russian description");
