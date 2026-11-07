@@ -185,11 +185,12 @@ async function handleAdminImport(request, env, user) {
       const promUrl = String(row["Продукт_на_сайті"] || "").slice(0, 2000);
       const price = String(row["Ціна"] || "").slice(0, 40);
       const currency = String(row["Валюта"] || "").slice(0, 12);
+      const quantity = row["Кількість"] == null ? "" : String(row["Кількість"]).slice(0, 40);
       const availability = String(row["Наявність"] || "").slice(0, 40);
       const imageText = String(row["Посилання_зображення"] || "");
       const images = imageText.split(/\s*,\s*/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 30);
-      return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
-        .bind(batchId, productId, title, promUrl, price, currency, availability, JSON.stringify(images), raw);
+      return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
+        .bind(batchId, productId, title, promUrl, price, currency, quantity, availability, JSON.stringify(images), raw);
     });
     await env.DB.batch(statements);
     inserted += statements.length;
@@ -212,7 +213,7 @@ async function handleAdmin(request, env, url) {
   if (url.pathname === "/admin/import/items" && request.method === "GET") {
     const batchId = url.searchParams.get("batch_id") || "";
     if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
-    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, raw_availability, image_urls_json, review_status, review_note, created_at FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, review_status, review_note, created_at FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
     return json({ items: result.results || [] });
   }
   if (url.pathname === "/admin/import/item" && request.method === "PATCH") {
