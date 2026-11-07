@@ -171,7 +171,7 @@ function promRowsFromCSV(text){
    description_ru:promPlainText(get(row,"Опис")),images,url,
    quantity:get(row,"Кількість")===""?null:Number(get(row,"Кількість")),
    availability:get(row,"Наявність"),
-   delivery_days:/^\\d{1,3}$/.test(get(row,"Наявність"))?Number(get(row,"Наявність")):null
+   delivery_days:/^\d{1,3}$/.test(get(row,"Наявність"))?Number(get(row,"Наявність")):null
   });
  }
  return {items,total:rows.length-1,skipped};
