@@ -250,6 +250,48 @@ async function handleAdmin(request, env, url) {
     if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
     return json({ ok: true, id, review_status: status });
   }
+  if (url.pathname === "/admin/import/item" && request.method === "PUT") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id);
+    const title = String(payload?.title || "").trim().slice(0, 500);
+    const price = String(payload?.price ?? "").trim().slice(0, 40);
+    const currency = String(payload?.currency || "").trim().slice(0, 12);
+    const quantity = String(payload?.quantity ?? "").trim().slice(0, 40);
+    const availability = String(payload?.raw_availability || "").trim().slice(0, 40);
+    const promUrl = String(payload?.prom_url || "").trim().slice(0, 2000);
+    const images = payload?.images;
+    if (!Number.isInteger(id) || id < 1 || !title) return json({ error: "Укажите корректный товар и название" }, 400);
+    if (!Array.isArray(images) || images.length > 30 || images.some(x => typeof x !== "string" || x.length > 2000 || !/^https?:\/\//i.test(x))) {
+      return json({ error: "Проверьте ссылки на фотографии (до 30 ссылок http/https)" }, 400);
+    }
+    if (promUrl && !/^https?:\/\//i.test(promUrl)) return json({ error: "Некорректная ссылка Prom" }, 400);
+    const existing = await env.DB.prepare("SELECT raw_json FROM import_items WHERE id = ?").bind(id).first();
+    if (!existing) return json({ error: "Item not found" }, 404);
+    let raw = {};
+    try { raw = JSON.parse(existing.raw_json || "{}"); } catch { raw = {}; }
+    raw["Назва_позиції"] = title;
+    raw["Назва_позиції_укр"] = title;
+    raw["Ціна"] = price;
+    raw["Валюта"] = currency;
+    raw["Кількість"] = quantity;
+    raw["Наявність"] = availability;
+    raw["Продукт_на_сайті"] = promUrl;
+    raw["Посилання_зображення"] = images.join(",");
+    await env.DB.prepare(
+      "UPDATE import_items SET title = ?, price = ?, currency = ?, quantity = ?, raw_availability = ?, prom_url = ?, image_urls_json = ?, raw_json = ?, review_status = 'pending', review_note = NULL, reviewed_by = NULL, reviewed_at = NULL WHERE id = ?"
+    ).bind(title, price, currency, quantity, availability, promUrl, JSON.stringify(images), JSON.stringify(raw), id).run();
+    return json({ ok: true, id, review_status: "pending" });
+  }
+  if (url.pathname === "/admin/import/item" && request.method === "DELETE") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id);
+    if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
+    const result = await env.DB.prepare("DELETE FROM import_items WHERE id = ?").bind(id).run();
+    if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+    return json({ ok: true, id, deleted: true });
+  }
   return json({ error: "Not found" }, 404);
 }
 
