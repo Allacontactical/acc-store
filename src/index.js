@@ -252,8 +252,8 @@ function buildPublishedProduct(item) {
   return product;
 }
 async function dispatchCatalogPublish(env, item, product) {
-  const token = env.GITHUB_CONTENTS_TOKEN;
-  if (!token) throw new Error("Не настроен секрет GITHUB_CONTENTS_TOKEN для публикации в каталог.");
+  const token = env.ACC_CONTENTS_TOKEN;
+  if (!token) throw new Error("Не настроен секрет ACC_CONTENTS_TOKEN для публикации в каталог.");
   const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
     method: "POST",
     headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token,
@@ -544,7 +544,7 @@ export default {
 
     if (url.pathname === "/internal/publish-callback" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
-      if (!env.GITHUB_CONTENTS_TOKEN || supplied !== env.GITHUB_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
       let payload;
       try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
       const id = Number(payload?.id);
