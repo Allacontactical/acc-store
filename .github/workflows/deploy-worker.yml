@@ -42,9 +42,9 @@ jobs:
       - name: Verify GitHub catalog publishing token is configured
         shell: bash
         env:
-          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
+          ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
         run: |
-          test -n "$GITHUB_CONTENTS_TOKEN" || { echo "Missing GitHub Actions secret GITHUB_CONTENTS_TOKEN (fine-grained token with Contents read/write access to Allacontactical/acc-store)"; exit 1; }
+          test -n "$ACC_CONTENTS_TOKEN" || { echo "Missing GitHub Actions secret ACC_CONTENTS_TOKEN (fine-grained token with Contents read/write access to Allacontactical/acc-store)"; exit 1; }
           echo "GitHub catalog publishing token is configured."
       - name: List D1 databases accessible to deployment token
         run: npx --yes wrangler@4.157.0 d1 list --config wrangler.jsonc
@@ -65,12 +65,12 @@ jobs:
             TELEGRAM_BOT_TOKEN
             TELEGRAM_WEBHOOK_SECRET
             ADMIN_TELEGRAM_ID
-            GITHUB_CONTENTS_TOKEN
+            ACC_CONTENTS_TOKEN
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
-          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
+          ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
       - name: Verify production account redirect
         shell: bash
