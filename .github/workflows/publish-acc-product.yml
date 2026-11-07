@@ -50,7 +50,7 @@ jobs:
       - name: Confirm publication in ACC admin database
         if: always()
         env:
-          GITHUB_CONTENTS_TOKEN: ${{ secrets.GITHUB_CONTENTS_TOKEN }}
+          ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           ITEM_ID: ${{ github.event.client_payload.item_id }}
           SUCCESS: ${{ steps.publish.outcome == 'success' }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit_sha }}
@@ -60,7 +60,7 @@ jobs:
           (async () => {
             const response = await fetch('https://allacontactical-bot.allacontactical.workers.dev/internal/publish-callback', {
               method: 'POST',
-              headers: { 'Authorization': 'Bearer ' + process.env.GITHUB_CONTENTS_TOKEN, 'Content-Type': 'application/json' },
+              headers: { 'Authorization': 'Bearer ' + process.env.ACC_CONTENTS_TOKEN, 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 id: Number(process.env.ITEM_ID),
                 success: process.env.SUCCESS === 'true',
