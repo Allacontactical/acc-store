@@ -39,7 +39,40 @@ async function api(path,options={}){const headers=Object.assign({},options.heade
 function showWorkspace(){ $("login").classList.add("hidden");$("workspace").classList.remove("hidden");$("logout").classList.remove("hidden");loadBatches();}
 function showLogin(){ $("login").classList.remove("hidden");$("workspace").classList.add("hidden");$("logout").classList.add("hidden");}
 async function verify(){if(!token)return showLogin();try{await api("/admin/me");showWorkspace();}catch(_){token="";sessionStorage.removeItem("acc_admin_session");showLogin();}}
-$("loginBtn").onclick=async()=>{const popup=window.open("about:blank","_blank");try{msg("loginMsg","Создаю запрос на вход…");const r=await fetch(API+"/auth/start",{method:"POST"});const d=await r.json();if(!r.ok)throw new Error(d.error||"Не удалось начать вход");if(popup)popup.location=d.telegram_url;else window.location.href=d.telegram_url;msg("loginMsg","Подтвердите вход в Telegram. После нажатия Start вернитесь сюда и нажмите «Проверить вход».");$("loginBtn").textContent="Проверить вход";$("loginBtn").onclick=async()=>{try{const s=await fetch(API+"/auth/status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:d.token})});const v=await s.json();if(v.status==="authenticated"){token=v.session_token;sessionStorage.setItem("acc_admin_session",token);await verify();}else msg("loginMsg","Статус входа: "+v.status+". Если вы уже нажали Start, повторите проверку.");}catch(e){msg("loginMsg",e.message);}};}catch(e){msg("loginMsg",e.message);}};
+async function checkLogin(){
+ const challenge=sessionStorage.getItem("acc_admin_challenge");
+ if(!challenge){msg("loginMsg","Сначала нажмите «Войти через Telegram».");return;}
+ try{
+  msg("loginMsg","Проверяю подтверждение в Telegram…");
+  const s=await fetch(API+"/auth/status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:challenge}),cache:"no-store"});
+  const v=await s.json();
+  if(!s.ok)throw new Error(v.error||("HTTP "+s.status));
+  if(v.status==="authenticated"){
+   sessionStorage.removeItem("acc_admin_challenge");
+   token=v.session_token;sessionStorage.setItem("acc_admin_session",token);await verify();
+  }else msg("loginMsg","Статус входа: "+v.status+". После нажатия Start подождите немного и проверьте снова.");
+ }catch(e){msg("loginMsg","Не удалось проверить вход: "+e.message);}
+}
+async function startLogin(){
+ let popup=null;
+ try{
+  popup=window.open("about:blank","_blank");
+  msg("loginMsg","Создаю запрос на вход…");
+  const r=await fetch(API+"/auth/start",{method:"POST",cache:"no-store"});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||"Не удалось начать вход");
+  sessionStorage.setItem("acc_admin_challenge",d.token);
+  $("loginBtn").textContent="Проверить вход";
+  $("loginBtn").onclick=checkLogin;
+  if(popup){popup.location=d.telegram_url;msg("loginMsg","Откройте Telegram, нажмите Start, затем вернитесь сюда и нажмите «Проверить вход». Запрос сохранится даже после обновления страницы.");}
+  else{
+   msg("loginMsg","Браузер заблокировал новое окно. Откройте Telegram по ссылке ниже, нажмите Start, затем вернитесь сюда и нажмите «Проверить вход».");
+   const a=document.createElement("a");a.href=d.telegram_url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Открыть тестового Telegram-бота";a.style.display="block";a.style.marginTop="10px";$("loginMsg").append(a);
+  }
+ }catch(e){if(popup)popup.close();msg("loginMsg","Ошибка: "+e.message);}
+}
+$("loginBtn").onclick=startLogin;
+if(sessionStorage.getItem("acc_admin_challenge")){$("loginBtn").textContent="Проверить вход";$("loginBtn").onclick=checkLogin;}
 $("logout").onclick=async()=>{try{await api("/auth/logout",{method:"POST"});}catch(_){}token="";sessionStorage.removeItem("acc_admin_session");showLogin();};
 $("csvFile").onchange=()=>{$("uploadBtn").disabled=!$("csvFile").files.length;msg("uploadMsg","");};
 $("uploadBtn").onclick=()=>{const file=$("csvFile").files[0];if(!file)return; $("uploadBtn").disabled=true;msg("uploadMsg","Читаю CSV…");Papa.parse(file,{header:true,skipEmptyLines:true,complete:async result=>{try{if(result.errors.length)throw new Error("CSV содержит ошибки чтения: "+result.errors.slice(0,3).map(x=>x.message).join("; "));const rows=result.data.filter(x=>Object.values(x).some(v=>String(v||"").trim()));if(!rows.length)throw new Error("В файле нет строк товаров.");if(rows.length>400)throw new Error("В файле больше 400 строк. Разделите экспорт на части.");msg("uploadMsg","Передаю "+rows.length+" строк в закрытую очередь…");const data=await api("/admin/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_name:file.name,rows})});msg("uploadMsg","Готово: "+data.imported_items+" товаров добавлено в очередь. Публикация не выполнялась.");$("csvFile").value="";await loadBatches();await loadItems(data.batch_id);}catch(e){msg("uploadMsg","Ошибка: "+e.message);}finally{$("uploadBtn").disabled=false;}},error:e=>{msg("uploadMsg","Ошибка чтения: "+e.message);$("uploadBtn").disabled=false;}});};
