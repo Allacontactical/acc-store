@@ -119,3 +119,19 @@ jobs:
             --data-urlencode "url=https://allacontactical-bot-test.allacontactical.workers.dev/webhook" \
             --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}")
           echo "$response" | jq -e '.ok == true' >/dev/null
+      - name: Verify test Telegram bot identity and webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          identity=$(curl --fail --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe")
+          username=$(echo "$identity" | jq -r '.result.username // empty')
+          echo "Telegram bot username configured by secret: @${username}"
+          test "$username" = "AllaconTacticalTest_bot"
+          info=$(curl --fail --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo")
+          webhook=$(echo "$info" | jq -r '.result.url // empty')
+          echo "Telegram webhook URL: ${webhook}"
+          echo "Telegram pending updates: $(echo "$info" | jq -r '.result.pending_update_count // 0')"
+          echo "Telegram last webhook error: $(echo "$info" | jq -r '.result.last_error_message // "none"')"
+          test "$webhook" = "https://allacontactical-bot-test.allacontactical.workers.dev/webhook"
