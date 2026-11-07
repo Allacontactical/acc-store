@@ -64,6 +64,9 @@ async function verifyAdmin(request, env) {
     return await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,b64url(parts[2]),signed);
   } catch { return false; }
 }
+function isValidPromSourceId(value) {
+  return /^\\d{1,20}$/.test(String(value ?? "").trim());
+}
 function uid() { return crypto.randomUUID(); }
 async function productIdForImport(env) {
   for (let attempt=0;attempt<8;attempt++) {
