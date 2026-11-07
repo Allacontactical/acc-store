@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/acc-admin-v2
+      - fix/acc-admin-import-csv-xlsx
   pull_request:
     branches:
       - main
