@@ -159,9 +159,13 @@ async function handleAdmin(request,env,url,email) {
       if (!/^\\d{1,20}$/.test(sourceId) || !title || title.length>250 || seen.has(sourceId)) continue;
       seen.add(sourceId);
       const price=raw.price===null||raw.price===""||raw.price===undefined?null:Number(raw.price);
+      const quantity=raw.quantity===null||raw.quantity===""||raw.quantity===undefined?null:Number(raw.quantity);
+      const deliveryDays=raw.delivery_days===null||raw.delivery_days===""||raw.delivery_days===undefined?null:Number(raw.delivery_days);
       if (price!==null&&(!Number.isFinite(price)||price<0)) continue;
+      if (quantity!==null&&(!Number.isFinite(quantity)||quantity<0)) continue;
+      if (deliveryDays!==null&&(!Number.isInteger(deliveryDays)||deliveryDays<1||deliveryDays>999)) continue;
       const images=Array.isArray(raw.images)?raw.images.filter(x=>typeof x==="string"&&/^https:\/\//i.test(x)).slice(0,10):[];
-      const payload={id:sourceId,title,price,currency:String(raw.currency||"UAH").slice(0,8),category:String(raw.category||"").slice(0,180),description:String(raw.description||"").slice(0,12000),description_ru:String(raw.description_ru||"").slice(0,12000),image:images[0]||"",images,url:String(raw.url||"").slice(0,1000),availability:String(raw.availability||"").slice(0,180)};
+      const payload={id:sourceId,title,price,quantity,delivery_days:deliveryDays,currency:String(raw.currency||"UAH").slice(0,8),category:String(raw.category||"").slice(0,180),description:String(raw.description||"").slice(0,12000),description_ru:String(raw.description_ru||"").slice(0,12000),image:images[0]||"",images,url:String(raw.url||"").slice(0,1000),availability:String(raw.availability||"").slice(0,180)};
       const existing=await env.DB.prepare("SELECT id FROM acc_admin_products WHERE source_product_id=?").bind(sourceId).first();
       if (existing) matched++;
       await env.DB.prepare("INSERT INTO acc_admin_import_items (id,import_id,source_product_id,title,payload_json,existing_product_id) VALUES (?,?,?,?,?,?) ON CONFLICT(import_id,source_product_id) DO NOTHING").bind(uid(),importId,sourceId,title,JSON.stringify(payload),existing?.id||null).run();
