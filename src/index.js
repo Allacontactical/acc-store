@@ -158,6 +158,75 @@ async function handleAccount(request, env, url) {
   }
   return json({ error: "Not found" }, 404);
 }
+
+async function adminUser(request, env) {
+  if (!env.DB || !env.ADMIN_TELEGRAM_ID) return null;
+  const user = await authenticatedUser(request, env);
+  if (!user || String(user.telegram_user_id) !== String(env.ADMIN_TELEGRAM_ID)) return null;
+  return user;
+}
+async function handleAdminImport(request, env, user) {
+  let payload;
+  try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const rows = payload?.rows;
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 400) return json({ error: "Expected 1–400 CSV rows" }, 400);
+  const batchId = randomToken(12);
+  const sourceName = String(payload.source_name || "Prom CSV").slice(0, 180);
+  await env.DB.prepare("INSERT INTO import_batches (id, source_name, total_items, imported_by, status) VALUES (?, ?, ?, ?, 'processing')")
+    .bind(batchId, sourceName, rows.length, user.id).run();
+  let inserted = 0;
+  for (let offset = 0; offset < rows.length; offset += 40) {
+    const statements = rows.slice(offset, offset + 40).map((row) => {
+      if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Invalid CSV row");
+      const raw = JSON.stringify(row);
+      if (raw.length > 180000) throw new Error("A CSV row is too large");
+      const title = String(row["Назва_позиції_укр"] || row["Назва_позиції"] || "").slice(0, 500);
+      const productId = String(row["Ідентифікатор_товару"] || row["Унікальний_ідентифікатор"] || "").slice(0, 80);
+      const promUrl = String(row["Продукт_на_сайті"] || "").slice(0, 2000);
+      const price = String(row["Ціна"] || "").slice(0, 40);
+      const currency = String(row["Валюта"] || "").slice(0, 12);
+      const availability = String(row["Наявність"] || "").slice(0, 40);
+      const imageText = String(row["Посилання_зображення"] || "");
+      const images = imageText.split(/\s*,\s*/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 30);
+      return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
+        .bind(batchId, productId, title, promUrl, price, currency, availability, JSON.stringify(images), raw);
+    });
+    await env.DB.batch(statements);
+    inserted += statements.length;
+  }
+  await env.DB.prepare("UPDATE import_batches SET status = 'ready', imported_items = ? WHERE id = ?").bind(inserted, batchId).run();
+  return json({ ok: true, batch_id: batchId, imported_items: inserted, review_status: "pending" }, 201);
+}
+async function handleAdmin(request, env, url) {
+  const user = await adminUser(request, env);
+  if (!user) return json({ error: "Forbidden" }, 403);
+  if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
+  if (url.pathname === "/admin/import" && request.method === "POST") {
+    try { return await handleAdminImport(request, env, user); }
+    catch (error) { return json({ error: "Import failed", detail: String(error.message || error) }, 400); }
+  }
+  if (url.pathname === "/admin/import/batches" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT id, source_name, total_items, imported_items, status, created_at FROM import_batches ORDER BY created_at DESC LIMIT 30").all();
+    return json({ batches: result.results || [] });
+  }
+  if (url.pathname === "/admin/import/items" && request.method === "GET") {
+    const batchId = url.searchParams.get("batch_id") || "";
+    if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
+    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, raw_availability, image_urls_json, review_status, review_note, created_at FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+    return json({ items: result.results || [] });
+  }
+  if (url.pathname === "/admin/import/item" && request.method === "PATCH") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id), status = String(payload?.review_status || ""), note = String(payload?.review_note || "").slice(0, 1000);
+    if (!Number.isInteger(id) || id < 1 || !["pending", "approved", "rejected"].includes(status)) return json({ error: "Invalid item or review status" }, 400);
+    const result = await env.DB.prepare("UPDATE import_items SET review_status = ?, review_note = ?, reviewed_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), reviewed_by = ? WHERE id = ?").bind(status, note, user.id, id).run();
+    if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+    return json({ ok: true, id, review_status: status });
+  }
+  return json({ error: "Not found" }, 404);
+}
+
 async function handleWebhook(request, env) {
   // Fail closed: never accept public webhook updates without Telegram's secret header.
   if (!env.TELEGRAM_WEBHOOK_SECRET) return new Response("Webhook secret is not configured", { status: 503 });
@@ -245,6 +314,7 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
+    if (url.pathname.startsWith("/admin/")) return withCors(await handleAdmin(request, env, url), request);
     if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
         (request.method === "PUT" && url.pathname === "/account/cart") ||
         (request.method === "POST" && url.pathname === "/auth/logout")) {
