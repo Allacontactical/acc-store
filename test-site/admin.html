@@ -61,12 +61,12 @@ function openEditor(item){
  let urls=[];try{urls=JSON.parse(item.image_urls_json||"[]")}catch(_){}
  $("editTitle").value=item.title||"";$("editPrice").value=item.price||"";$("editCurrency").value=item.currency||"UAH";
  $("editQuantity").value=item.quantity??"";$("editAvailability").value=item.raw_availability||"";
- $("editPromUrl").value=item.prom_url||"";$("editImages").value=urls.join("\\n");msg("editMsg","");
+ $("editPromUrl").value=item.prom_url||"";$("editImages").value=urls.join("\n");msg("editMsg","");
  $("editDialog").showModal();
 }
 $("cancelEdit").onclick=()=>$("editDialog").close();
 $("editForm").onsubmit=async e=>{
- e.preventDefault();const images=$("editImages").value.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+ e.preventDefault();const images=$("editImages").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
  const payload={id:editingItemId,title:$("editTitle").value,price:$("editPrice").value,currency:$("editCurrency").value,quantity:$("editQuantity").value,raw_availability:$("editAvailability").value,prom_url:$("editPromUrl").value,images};
  try{await api("/admin/import/item",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});$("editDialog").close();await loadItems(selectedBatch);msg("uploadMsg","Изменения сохранены. Товар возвращён на повторную проверку.");}
  catch(err){msg("editMsg","Не удалось сохранить: "+err.message);}
