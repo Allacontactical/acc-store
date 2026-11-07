@@ -158,6 +158,286 @@ async function handleAccount(request, env, url) {
   }
   return json({ error: "Not found" }, 404);
 }
+async function adminUser(request, env) {
+  if (!env.DB || !env.ADMIN_TELEGRAM_ID) return null;
+  const user = await authenticatedUser(request, env);
+  if (!user || String(user.telegram_user_id) !== String(env.ADMIN_TELEGRAM_ID)) return null;
+  return user;
+}
+async function handleAdminImport(request, env, user) {
+  let payload;
+  try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const rows = payload?.rows;
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 400) return json({ error: "Expected 1–400 CSV rows" }, 400);
+  const batchId = randomToken(12);
+  const sourceName = String(payload.source_name || "Prom CSV").slice(0, 180);
+  await env.DB.prepare("INSERT INTO import_batches (id, source_name, total_items, imported_by, status) VALUES (?, ?, ?, ?, 'processing')")
+    .bind(batchId, sourceName, rows.length, user.id).run();
+  let inserted = 0;
+  try {
+    for (let offset = 0; offset < rows.length; offset += 40) {
+      const statements = rows.slice(offset, offset + 40).map((row) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Invalid CSV row");
+        const raw = JSON.stringify(row);
+        if (raw.length > 180000) throw new Error("A CSV row is too large");
+        const title = String(row["Назва_позиції_укр"] || row["Назва_позиції"] || "").slice(0, 500);
+        const productId = String(row["Ідентифікатор_товару"] || row["Унікальний_ідентифікатор"] || "").slice(0, 80);
+        const promUrl = String(row["Продукт_на_сайті"] || "").slice(0, 2000);
+        const price = String(row["Ціна"] || "").slice(0, 40);
+        const currency = String(row["Валюта"] || "").slice(0, 12);
+        const quantity = row["Кількість"] == null ? "" : String(row["Кількість"]).slice(0, 40);
+        const availability = String(row["Наявність"] || "").slice(0, 40);
+        const imageText = String(row["Посилання_зображення"] || "");
+        const images = imageText.split(/\s*,\s*/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 30);
+        return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
+          .bind(batchId, productId, title, promUrl, price, currency, quantity, availability, JSON.stringify(images), raw);
+      });
+      // D1 batch is transactional for this chunk; count only after it succeeds.
+      await env.DB.batch(statements);
+      inserted += statements.length;
+    }
+    await env.DB.prepare("UPDATE import_batches SET status = 'ready', imported_items = ? WHERE id = ? AND status = 'processing'")
+      .bind(inserted, batchId).run();
+    return json({ ok: true, batch_id: batchId, imported_items: inserted, review_status: "pending" }, 201);
+  } catch (error) {
+    // Never leave a partially imported batch available for review.
+    // Mark it failed and remove its rows together in one D1 transaction.
+    try {
+      await env.DB.batch([
+        env.DB.prepare("UPDATE import_batches SET status = 'failed', imported_items = 0 WHERE id = ?").bind(batchId),
+        env.DB.prepare("DELETE FROM import_items WHERE batch_id = ?").bind(batchId)
+      ]);
+    } catch (cleanupError) {
+      return json({
+        error: "Import failed and cleanup could not be confirmed",
+        batch_id: batchId,
+        detail: String(error.message || error),
+        cleanup_detail: String(cleanupError.message || cleanupError)
+      }, 500);
+    }
+    return json({
+      error: "Import failed; partial rows were removed and the batch was marked failed",
+      batch_id: batchId,
+      detail: String(error.message || error)
+    }, 400);
+  }
+}
+
+
+function buildPublishedProduct(item) {
+  let raw = {}; let images = [];
+  try { raw = JSON.parse(item.raw_json || "{}"); } catch { raw = {}; }
+  try { images = JSON.parse(item.image_urls_json || "[]"); } catch { images = []; }
+  const priceText = String(item.price || "").trim().replace(/\s/g, "").replace(",", ".");
+  const parsedPrice = priceText ? Number(priceText) : NaN;
+  const availability = String(item.raw_availability || "").trim();
+  const availabilityLower = availability.toLocaleLowerCase("uk-UA");
+  const category = raw["Назва_групи"] || raw["Назва_групи_укр"] || raw["Група_товару"] || raw["Категорія"] || raw["Група"] || "";
+  const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
+  const product = {
+    id: publicId, title: item.title || "",
+    currency: item.currency || "UAH"
+  };
+  if (Number.isFinite(parsedPrice)) product.price = parsedPrice;
+  if (category) product.category = category;
+  if (images.length) { product.image = images[0]; product.images = images; }
+  if (item.prom_url) product.url = item.prom_url;
+  if (availability) product.availability = availability;
+  const description = raw["Опис_позиції_укр"] || raw["Опис"] || "";
+  const descriptionRu = raw["Опис_позиції"] || raw["Опис_позиції_рос"] || "";
+  if (description) product.description = description;
+  if (descriptionRu) product.description_ru = descriptionRu;
+  if (raw["Бренд"]) product.brand = raw["Бренд"];
+  product.availability_status = /очіку|ожида|expected/.test(availabilityLower) ? "expected" : "";
+  return product;
+}
+async function dispatchCatalogPublish(env, item, product) {
+  const token = env.ACC_CONTENTS_TOKEN;
+  if (!token) throw new Error("Не настроен секрет ACC_CONTENTS_TOKEN для публикации в каталог.");
+  const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
+    method: "POST",
+    headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token,
+      "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+    body: JSON.stringify({ event_type: "acc-publish-product", client_payload: { item_id: item.id, product } })
+  });
+  if (response.status !== 204) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error("GitHub dispatch " + response.status + ": " + String(detail.message || "request failed").slice(0, 250));
+  }
+}
+
+async function handleAdmin(request, env, url) {
+  const user = await adminUser(request, env);
+  if (!user) return json({ error: "Forbidden" }, 403);
+  if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
+
+
+  if (url.pathname === "/admin/import/publish" && request.method === "POST") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id);
+    if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
+    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
+    if (!item) return json({ error: "Item not found" }, 404);
+    if (item.review_status !== "approved") return json({ error: "Сначала одобрите товар" }, 409);
+    if (item.publish_status === "queued") return json({ error: "Публикация этой позиции уже выполняется" }, 409);
+    const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
+    const duplicate = await env.DB.prepare("SELECT id FROM import_items WHERE id <> ? AND COALESCE(NULLIF(public_product_id, ''), product_id) = ? LIMIT 1").bind(id, publicId).first();
+    if (duplicate) return json({ error: "Этот ID уже закреплён за позицией №" + duplicate.id }, 409);
+    const product = buildPublishedProduct({ ...item, public_product_id: publicId });
+    // Claim the item atomically so two simultaneous publish requests cannot dispatch it twice.
+    const claimed = await env.DB.prepare("UPDATE import_items SET public_product_id = ?, publish_status = 'queued' WHERE id = ? AND review_status = 'approved' AND COALESCE(publish_status, '') <> 'queued'").bind(publicId, id).run();
+    if (!claimed.meta?.changes) return json({ error: "Публикация уже запущена или товар больше не одобрен" }, 409);
+    try {
+      await dispatchCatalogPublish(env, item, product);
+      return json({ ok: true, id, public_product_id: publicId, publish_status: "queued" }, 202);
+    } catch (error) {
+      await env.DB.prepare("UPDATE import_items SET publish_status = 'failed' WHERE id = ?").bind(id).run();
+      return json({ error: "Не удалось запустить публикацию", detail: String(error.message || error).slice(0, 400) }, 502);
+    }
+  }
+
+  if (url.pathname === "/admin/images" && request.method === "POST") {
+    if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+    let form;
+    try { form = await request.formData(); } catch { return json({ error: "Invalid multipart upload" }, 400); }
+    const files = form.getAll("files").filter(x => x && typeof x === "object" && typeof x.stream === "function");
+    if (!files.length || files.length > 10) return json({ error: "Загрузите от 1 до 10 фотографий" }, 400);
+    if (files.some(file => file.type !== "image/webp" || file.size < 1 || file.size > 8 * 1024 * 1024)) {
+      return json({ error: "Допускаются только WebP-фото размером до 8 МБ каждое" }, 400);
+    }
+    const keys = [];
+    try {
+      for (const file of files) {
+        const key = randomToken(12) + ".webp";
+        await env.PRODUCT_IMAGES.put(key, file.stream(), {
+          httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
+        });
+        keys.push(key);
+      }
+      return json({ ok: true, images: keys.map(key => new URL("/product-images/" + key, request.url).toString()) }, 201);
+    } catch (error) {
+      if (keys.length) await env.PRODUCT_IMAGES.delete(keys).catch(() => {});
+      return json({ error: "Не удалось сохранить фотографии", detail: String(error.message || error) }, 500);
+    }
+  }
+  if (url.pathname === "/admin/images" && request.method === "DELETE") {
+    if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const keys = Array.isArray(payload?.keys) ? payload.keys : [];
+    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
+    await env.PRODUCT_IMAGES.delete(keys);
+    return json({ ok: true });
+  }
+  if (url.pathname === "/admin/manual-product" && request.method === "POST") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const title = String(payload?.title || "").trim().slice(0, 500);
+    const brand = String(payload?.brand || "").trim().slice(0, 120);
+    const category = String(payload?.category || "").trim().slice(0, 160);
+    const description = String(payload?.description || "").trim().slice(0, 12000);
+    const price = String(payload?.price ?? "").trim().slice(0, 40);
+    const currency = String(payload?.currency || "UAH").trim().slice(0, 12);
+    const quantity = String(payload?.quantity ?? "").trim().slice(0, 40);
+    const availability = String(payload?.availability || "Під замовлення").trim().slice(0, 40);
+    const images = payload?.images;
+    if (!title || !price) return json({ error: "Укажите название и цену товара" }, 400);
+    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\/product-images\/[a-f0-9]{24}\.webp$/.test(x))) {
+      return json({ error: "Некорректный список фотографий" }, 400);
+    }
+    const batchId = randomToken(12);
+    const raw = {
+      "Назва_позиції": title, "Назва_позиції_укр": title, "Бренд": brand,
+      "Категорія": category, "Опис": description, "Опис_позиції_укр": description,
+      "Ціна": price, "Валюта": currency, "Кількість": quantity,
+      "Наявність": availability, "Посилання_зображення": images.join(",")
+    };
+    try {
+      await env.DB.prepare("INSERT INTO import_batches (id, source_name, total_items, imported_items, status, imported_by) VALUES (?, 'Ручное добавление', 1, 1, 'ready', ?)").bind(batchId, user.id).run();
+      await env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, NULL, ?, '', ?, ?, ?, ?, ?, ?, 'pending')")
+        .bind(batchId, title, price, currency, quantity, availability, JSON.stringify(images), JSON.stringify(raw)).run();
+      return json({ ok: true, batch_id: batchId, created: true, review_status: "pending" }, 201);
+    } catch (error) {
+      await env.DB.prepare("DELETE FROM import_batches WHERE id = ?").bind(batchId).run().catch(() => {});
+      return json({ error: "Не удалось добавить товар в очередь", detail: String(error.message || error) }, 500);
+    }
+  }
+  if (url.pathname === "/admin/import" && request.method === "POST") {
+    try { return await handleAdminImport(request, env, user); }
+    catch (error) { return json({ error: "Import failed", detail: String(error.message || error) }, 400); }
+  }
+  if (url.pathname === "/admin/import/batches" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT id, source_name, total_items, imported_items, status, created_at FROM import_batches ORDER BY created_at DESC LIMIT 30").all();
+    return json({ batches: result.results || [] });
+  }
+  if (url.pathname === "/admin/import/items" && request.method === "GET") {
+    const batchId = url.searchParams.get("batch_id") || "";
+    if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
+    const result = await env.DB.prepare("SELECT id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, review_note, created_at, is_published, public_product_id, publish_status, publish_commit_sha FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+    return json({ items: result.results || [] });
+  }
+  if (url.pathname === "/admin/import/item" && request.method === "PATCH") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id), status = String(payload?.review_status || ""), note = String(payload?.review_note || "").slice(0, 1000);
+    if (!Number.isInteger(id) || id < 1 || !["pending", "approved", "rejected"].includes(status)) return json({ error: "Invalid item or review status" }, 400);
+    const result = await env.DB.prepare("UPDATE import_items SET review_status = ?, review_note = ?, reviewed_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), reviewed_by = ? WHERE id = ?").bind(status, note, user.id, id).run();
+    if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+    return json({ ok: true, id, review_status: status });
+  }
+  if (url.pathname === "/admin/import/item" && request.method === "PUT") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id);
+    const title = String(payload?.title || "").trim().slice(0, 500);
+    const brand = String(payload?.brand || "").trim().slice(0, 120);
+    const category = String(payload?.category || "").trim().slice(0, 160);
+    const description = String(payload?.description || "").trim().slice(0, 12000);
+    const price = String(payload?.price ?? "").trim().slice(0, 40);
+    const currency = String(payload?.currency || "").trim().slice(0, 12);
+    const quantity = String(payload?.quantity ?? "").trim().slice(0, 40);
+    const availability = String(payload?.raw_availability || "").trim().slice(0, 40);
+    const promUrl = String(payload?.prom_url || "").trim().slice(0, 2000);
+    const images = payload?.images;
+    if (!Number.isInteger(id) || id < 1 || !title) return json({ error: "Укажите корректный товар и название" }, 400);
+    if (!Array.isArray(images) || images.length > 30 || images.some(x => typeof x !== "string" || x.length > 2000 || !/^https?:\/\//i.test(x))) {
+      return json({ error: "Проверьте ссылки на фотографии (до 30 ссылок http/https)" }, 400);
+    }
+    if (promUrl && !/^https?:\/\//i.test(promUrl)) return json({ error: "Некорректная ссылка Prom" }, 400);
+    const existing = await env.DB.prepare("SELECT raw_json FROM import_items WHERE id = ?").bind(id).first();
+    if (!existing) return json({ error: "Item not found" }, 404);
+    let raw = {};
+    try { raw = JSON.parse(existing.raw_json || "{}"); } catch { raw = {}; }
+    raw["Назва_позиції"] = title;
+    raw["Назва_позиції_укр"] = title;
+    raw["Бренд"] = brand;
+    raw["Категорія"] = category;
+    raw["Опис"] = description;
+    raw["Опис_позиції_укр"] = description;
+    raw["Ціна"] = price;
+    raw["Валюта"] = currency;
+    raw["Кількість"] = quantity;
+    raw["Наявність"] = availability;
+    raw["Продукт_на_сайті"] = promUrl;
+    raw["Посилання_зображення"] = images.join(",");
+    await env.DB.prepare(
+      "UPDATE import_items SET title = ?, price = ?, currency = ?, quantity = ?, raw_availability = ?, prom_url = ?, image_urls_json = ?, raw_json = ?, review_status = 'pending', review_note = NULL, reviewed_by = NULL, reviewed_at = NULL WHERE id = ?"
+    ).bind(title, price, currency, quantity, availability, promUrl, JSON.stringify(images), JSON.stringify(raw), id).run();
+    return json({ ok: true, id, review_status: "pending" });
+  }
+  if (url.pathname === "/admin/import/item" && request.method === "DELETE") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const id = Number(payload?.id);
+    if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
+    const result = await env.DB.prepare("DELETE FROM import_items WHERE id = ?").bind(id).run();
+    if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+    return json({ ok: true, id, deleted: true });
+  }
+  return json({ error: "Not found" }, 404);
+}
+
 async function handleWebhook(request, env) {
   // Fail closed: never accept public webhook updates without Telegram's secret header.
   if (!env.TELEGRAM_WEBHOOK_SECRET) return new Response("Webhook secret is not configured", { status: 503 });
@@ -246,8 +526,39 @@ export default {
 
     const cors = corsHeaders(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    if (request.method === "GET" && url.pathname === "/admin.html" && env.ASSETS) {
+      const assetUrl = new URL("/admin.html", request.url);
+      return env.ASSETS.fetch(new Request(assetUrl, request));
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
+      const key = url.pathname.slice("/product-images/".length);
+      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      const object = await env.PRODUCT_IMAGES.get(key);
+      if (!object) return new Response("Not found", { status: 404 });
+      return new Response(object.body, { headers: {
+        "Content-Type": object.httpMetadata?.contentType || "image/webp",
+        "Cache-Control": object.httpMetadata?.cacheControl || "public, max-age=31536000, immutable",
+        "ETag": object.httpEtag
+      }});
+    }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
+
+    if (url.pathname === "/internal/publish-callback" && request.method === "POST") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      let payload;
+      try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const id = Number(payload?.id);
+      if (!Number.isInteger(id) || id < 1 || typeof payload.success !== "boolean") return json({ error: "Invalid callback payload" }, 400);
+      const status = payload.success ? "published" : "failed";
+      const result = await env.DB.prepare("UPDATE import_items SET is_published = CASE WHEN ? = 1 THEN 1 ELSE is_published END, publish_status = ?, publish_commit_sha = ? WHERE id = ?")
+        .bind(payload.success ? 1 : 0, status, String(payload.commit_sha || "").slice(0, 80), id).run();
+      if (!result.meta?.changes) return json({ error: "Item not found" }, 404);
+      return json({ ok: true, id, publish_status: status });
+    }
+
+    if (url.pathname.startsWith("/admin/")) return withCors(await handleAdmin(request, env, url), request);
     if ((request.method === "GET" && (url.pathname === "/account/me" || url.pathname === "/account/cart")) ||
         (request.method === "PUT" && url.pathname === "/account/cart") ||
         (request.method === "POST" && url.pathname === "/auth/logout")) {

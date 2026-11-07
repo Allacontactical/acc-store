@@ -7,9 +7,23 @@
   "vars": {
     "TELEGRAM_BOT_USERNAME": "Allacontactical_bot"
   },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "acc-catalog-db",
-    "database_id": "506eb009-1462-4ff6-a781-1404e9aecf59"
-  }]
+  "assets": {
+    "directory": "./admin-site",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none"
+  },
+  "r2_buckets": [
+    {
+      "binding": "PRODUCT_IMAGES",
+      "bucket_name": "acc-product-images"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "acc-catalog-db",
+      "database_id": "506eb009-1462-4ff6-a781-1404e9aecf59"
+    }
+  ]
 }
