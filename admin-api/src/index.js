@@ -65,7 +65,7 @@ async function verifyAdmin(request, env) {
   } catch { return false; }
 }
 function isValidPromSourceId(value) {
-  return /^\\d{1,20}$/.test(String(value ?? "").trim());
+  return /^\d{1,20}$/.test(String(value ?? "").trim());
 }
 function uid() { return crypto.randomUUID(); }
 async function productIdForImport(env) {
