@@ -256,7 +256,7 @@ async function handleAdmin(request, env, url) {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const keys = Array.isArray(payload?.keys) ? payload.keys : [];
-    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
+    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
     await env.PRODUCT_IMAGES.delete(keys);
     return json({ ok: true });
   }
@@ -273,7 +273,7 @@ async function handleAdmin(request, env, url) {
     const availability = String(payload?.availability || "Під замовлення").trim().slice(0, 40);
     const images = payload?.images;
     if (!title || !price) return json({ error: "Укажите название и цену товара" }, 400);
-    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\\/product-images\\/[a-f0-9]{24}\\.webp$/.test(x))) {
+    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\/product-images\/[a-f0-9]{24}\.webp$/.test(x))) {
       return json({ error: "Некорректный список фотографий" }, 400);
     }
     const batchId = randomToken(12);
@@ -448,7 +448,7 @@ export default {
     }
     if (request.method === "GET" && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
       const object = await env.PRODUCT_IMAGES.get(key);
       if (!object) return new Response("Not found", { status: 404 });
       return new Response(object.body, { headers: {
