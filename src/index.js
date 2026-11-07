@@ -227,6 +227,72 @@ async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
+  if (url.pathname === "/admin/images" && request.method === "POST") {
+    if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+    let form;
+    try { form = await request.formData(); } catch { return json({ error: "Invalid multipart upload" }, 400); }
+    const files = form.getAll("files").filter(x => x && typeof x === "object" && typeof x.stream === "function");
+    if (!files.length || files.length > 10) return json({ error: "Загрузите от 1 до 10 фотографий" }, 400);
+    if (files.some(file => file.type !== "image/webp" || file.size < 1 || file.size > 8 * 1024 * 1024)) {
+      return json({ error: "Допускаются только WebP-фото размером до 8 МБ каждое" }, 400);
+    }
+    const keys = [];
+    try {
+      for (const file of files) {
+        const key = randomToken(12) + ".webp";
+        await env.PRODUCT_IMAGES.put(key, file.stream(), {
+          httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
+        });
+        keys.push(key);
+      }
+      return json({ ok: true, images: keys.map(key => new URL("/product-images/" + key, request.url).toString()) }, 201);
+    } catch (error) {
+      if (keys.length) await env.PRODUCT_IMAGES.delete(keys).catch(() => {});
+      return json({ error: "Не удалось сохранить фотографии", detail: String(error.message || error) }, 500);
+    }
+  }
+  if (url.pathname === "/admin/images" && request.method === "DELETE") {
+    if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const keys = Array.isArray(payload?.keys) ? payload.keys : [];
+    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
+    await env.PRODUCT_IMAGES.delete(keys);
+    return json({ ok: true });
+  }
+  if (url.pathname === "/admin/manual-product" && request.method === "POST") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const title = String(payload?.title || "").trim().slice(0, 500);
+    const brand = String(payload?.brand || "").trim().slice(0, 120);
+    const category = String(payload?.category || "").trim().slice(0, 160);
+    const description = String(payload?.description || "").trim().slice(0, 12000);
+    const price = String(payload?.price ?? "").trim().slice(0, 40);
+    const currency = String(payload?.currency || "UAH").trim().slice(0, 12);
+    const quantity = String(payload?.quantity ?? "").trim().slice(0, 40);
+    const availability = String(payload?.availability || "Під замовлення").trim().slice(0, 40);
+    const images = payload?.images;
+    if (!title || !price) return json({ error: "Укажите название и цену товара" }, 400);
+    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\\/product-images\\/[a-f0-9]{24}\\.webp$/.test(x))) {
+      return json({ error: "Некорректный список фотографий" }, 400);
+    }
+    const batchId = randomToken(12);
+    const raw = {
+      "Назва_позиції": title, "Назва_позиції_укр": title, "Бренд": brand,
+      "Категорія": category, "Опис": description, "Опис_позиції_укр": description,
+      "Ціна": price, "Валюта": currency, "Кількість": quantity,
+      "Наявність": availability, "Посилання_зображення": images.join(",")
+    };
+    try {
+      await env.DB.prepare("INSERT INTO import_batches (id, source_name, total_items, imported_items, status, imported_by) VALUES (?, 'Ручное добавление', 1, 1, 'ready', ?)").bind(batchId, user.id).run();
+      await env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, NULL, ?, '', ?, ?, ?, ?, ?, ?, 'pending')")
+        .bind(batchId, title, price, currency, quantity, availability, JSON.stringify(images), JSON.stringify(raw)).run();
+      return json({ ok: true, batch_id: batchId, created: true, review_status: "pending" }, 201);
+    } catch (error) {
+      await env.DB.prepare("DELETE FROM import_batches WHERE id = ?").bind(batchId).run().catch(() => {});
+      return json({ error: "Не удалось добавить товар в очередь", detail: String(error.message || error) }, 500);
+    }
+  }
   if (url.pathname === "/admin/import" && request.method === "POST") {
     try { return await handleAdminImport(request, env, user); }
     catch (error) { return json({ error: "Import failed", detail: String(error.message || error) }, 400); }
@@ -379,6 +445,17 @@ export default {
     if (request.method === "GET" && url.pathname === "/" && env.ASSETS) {
       const assetUrl = new URL("/index.html", request.url);
       return env.ASSETS.fetch(new Request(assetUrl, request));
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
+      const key = url.pathname.slice("/product-images/".length);
+      if (!/^[a-f0-9]{24}\\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      const object = await env.PRODUCT_IMAGES.get(key);
+      if (!object) return new Response("Not found", { status: 404 });
+      return new Response(object.body, { headers: {
+        "Content-Type": object.httpMetadata?.contentType || "image/webp",
+        "Cache-Control": object.httpMetadata?.cacheControl || "public, max-age=31536000, immutable",
+        "ETag": object.httpEtag
+      }});
     }
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
