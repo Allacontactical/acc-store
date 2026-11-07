@@ -461,7 +461,7 @@ export default {
     }
     if (request.method === "GET" && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
       const object = await env.PRODUCT_IMAGES.get(key);
       if (!object) return new Response("Not found", { status: 404 });
       return new Response(object.body, { headers: {
