@@ -236,16 +236,19 @@ function buildPublishedProduct(item) {
   const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
   const product = {
     id: publicId, title: item.title || "",
-    price: Number.isFinite(parsedPrice) ? parsedPrice : null,
-    currency: item.currency || "UAH", category,
-    image: images[0] || "", images,
-    url: item.prom_url || "https://allacontactical.prom.ua/",
-    availability: availability || "Уточнюйте актуальну наявність у фахівця ACC",
-    description: raw["Опис_позиції_укр"] || raw["Опис"] || "",
-    description_ru: raw["Опис_позиції"] || raw["Опис_позиції_рос"] || ""
+    currency: item.currency || "UAH"
   };
+  if (Number.isFinite(parsedPrice)) product.price = parsedPrice;
+  if (category) product.category = category;
+  if (images.length) { product.image = images[0]; product.images = images; }
+  if (item.prom_url) product.url = item.prom_url;
+  if (availability) product.availability = availability;
+  const description = raw["Опис_позиції_укр"] || raw["Опис"] || "";
+  const descriptionRu = raw["Опис_позиції"] || raw["Опис_позиції_рос"] || "";
+  if (description) product.description = description;
+  if (descriptionRu) product.description_ru = descriptionRu;
   if (raw["Бренд"]) product.brand = raw["Бренд"];
-  if (/очіку|ожида|expected/.test(availabilityLower)) product.availability_status = "expected";
+  product.availability_status = /очіку|ожида|expected/.test(availabilityLower) ? "expected" : "";
   return product;
 }
 async function dispatchCatalogPublish(env, item, product) {
