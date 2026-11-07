@@ -271,18 +271,48 @@ async function dispatchCatalogPublish(env, item, product) {
   }
 }
 
+function isSafe281ImportBatch(batch, itemCount) {
+  return Boolean(batch &&
+    batch.source_name === "ACC_281_products_no_optics_admin_import.xlsx" &&
+    Number(batch.total_items) === 281 &&
+    Number(batch.imported_items) === 281 &&
+    Number(itemCount) === 281 &&
+    batch.status === "ready");
+}
+
 async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
 
 
+  if (url.pathname === "/admin/import/batch/approve" && request.method === "POST") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const batchId = String(payload?.batch_id || "");
+    if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
+    const batch = await env.DB.prepare("SELECT id, source_name, total_items, imported_items, status FROM import_batches WHERE id = ?").bind(batchId).first();
+    const counts = await env.DB.prepare(
+      "SELECT COUNT(*) AS total, COUNT(DISTINCT product_id) AS unique_ids, SUM(CASE WHEN review_status = 'rejected' THEN 1 ELSE 0 END) AS rejected, SUM(CASE WHEN product_id IS NULL OR TRIM(product_id) = '' THEN 1 ELSE 0 END) AS missing_ids FROM import_items WHERE batch_id = ?"
+    ).bind(batchId).first();
+    if (!isSafe281ImportBatch(batch, counts?.total)) return json({ error: "Массовая операция разрешена только для полного пакета ACC из 281 товара." }, 409);
+    if (Number(counts.unique_ids) !== 281 || Number(counts.rejected || 0) > 0 || Number(counts.missing_ids || 0) > 0) {
+      return json({ error: "Проверка пакета не пройдена: найдены отклонённые товары или проблемы с ID." }, 409);
+    }
+    await env.DB.prepare(
+      "UPDATE import_items SET review_status = 'approved', review_note = NULL, reviewed_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), reviewed_by = ? WHERE batch_id = ? AND review_status = 'pending'"
+    ).bind(user.id, batchId).run();
+    const approved = await env.DB.prepare("SELECT COUNT(*) AS total FROM import_items WHERE batch_id = ? AND review_status = 'approved'").bind(batchId).first();
+    if (Number(approved?.total) !== 281) return json({ error: "Не удалось подтвердить все 281 позиции", approved: Number(approved?.total || 0) }, 409);
+    return json({ ok: true, batch_id: batchId, approved: 281 });
+  }
+
   if (url.pathname === "/admin/import/publish" && request.method === "POST") {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const id = Number(payload?.id);
     if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
-    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
+    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
     if (!item) return json({ error: "Item not found" }, 404);
     if (item.review_status !== "approved") return json({ error: "Сначала одобрите товар" }, 409);
     if (item.publish_status === "queued") return json({ error: "Публикация этой позиции уже выполняется" }, 409);

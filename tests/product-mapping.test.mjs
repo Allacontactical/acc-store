@@ -55,3 +55,23 @@ test("keeps empty quantity empty and supports legacy brand and description heade
   assert.equal(product.availability, "Очікується");
   assert.equal(product.availability_status, "expected");
 });
+
+
+test("bulk approval is restricted to the exact complete 281-item ACC batch", () => {
+  const isSafe = (() => {
+    const start = source.indexOf("function isSafe281ImportBatch(batch, itemCount) {");
+    const end = source.indexOf("\n}\n", start) + 2;
+    const sandbox = {};
+    vm.runInNewContext(source.slice(start, end) + "\nglobalThis.check = isSafe281ImportBatch;", sandbox);
+    return sandbox.check;
+  })();
+  const batch = {
+    source_name: "ACC_281_products_no_optics_admin_import.xlsx",
+    total_items: 281, imported_items: 281, status: "ready"
+  };
+  assert.equal(isSafe(batch, 281), true);
+  assert.equal(isSafe(batch, 280), false);
+  assert.equal(isSafe({ ...batch, source_name: "Ручное добавление" }, 281), false);
+  assert.equal(isSafe({ ...batch, total_items: 1, imported_items: 1 }, 1), false);
+  assert.equal(isSafe({ ...batch, status: "processing" }, 281), false);
+});
