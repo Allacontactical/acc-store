@@ -8,6 +8,7 @@ on:
     paths:
       - "src/**"
       - "worker-assets/**"
+      - "admin-site/**"
       - "migrations/**"
       - "wrangler.jsonc"
       - ".github/workflows/deploy-worker.yml"
@@ -31,6 +32,13 @@ jobs:
           secret="$(openssl rand -hex 32)"
           echo "::add-mask::$secret"
           echo "secret=$secret" >> "$GITHUB_OUTPUT"
+      - name: Verify admin access secret is configured
+        shell: bash
+        env:
+          ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
+        run: |
+          test -n "$ADMIN_TELEGRAM_ID" || { echo "Missing GitHub Actions secret ADMIN_TELEGRAM_ID"; exit 1; }
+          echo "Admin Telegram ID secret is configured."
       - name: List D1 databases accessible to deployment token
         run: npx --yes wrangler@4.157.0 d1 list --config wrangler.jsonc
         env:
@@ -49,9 +57,11 @@ jobs:
           secrets: |
             TELEGRAM_BOT_TOKEN
             TELEGRAM_WEBHOOK_SECRET
+            ADMIN_TELEGRAM_ID
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
+          ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
       - name: Verify production account redirect
         shell: bash
