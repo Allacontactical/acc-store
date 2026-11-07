@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Serialize catalog writes so concurrent product publications cannot race on main.
+concurrency:
+  group: acc-product-catalog-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
