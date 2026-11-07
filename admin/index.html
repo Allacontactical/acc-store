@@ -9,6 +9,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Arial,sans-serif}.wrap{width:min(1180px,94%);margin:auto}header{background:#20251d;border-bottom:1px solid var(--line);padding:18px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:21px;font-weight:900;letter-spacing:1px}.brand span{color:var(--orange)}main{padding:26px 0 60px}h1{margin:0;font-size:28px}.muted{color:var(--muted)}.toolbar,.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin:18px 0}.toolbar{display:flex;gap:10px;flex-wrap:wrap}.toolbar input{flex:1;min-width:220px}input,select,textarea{width:100%;padding:11px;border:1px solid #69715f;border-radius:5px;background:#171b16;color:var(--text);font:inherit}label{display:block;color:var(--muted);font-size:13px;font-weight:bold;margin:10px 0 5px}.btn{border:1px solid var(--orange);border-radius:5px;background:var(--orange);color:#171b16;padding:10px 14px;font-weight:bold;cursor:pointer}.btn.secondary{background:transparent;color:var(--text);border-color:#69715f}.btn.danger{background:#7a3027;border-color:#a94b3e;color:white}.products{display:grid;gap:10px}.item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:7px}.item h3{margin:0 0 4px;font-size:16px}.item p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:7px;flex-wrap:wrap}.status{color:var(--orange)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.wide{grid-column:1/-1}.hidden{display:none!important}.photos{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.photos img{width:90px;height:90px;object-fit:contain;background:#f4f3ef;border-radius:5px}.notice{padding:12px;border-left:3px solid var(--orange);background:#2b3026;color:var(--muted);margin:14px 0}#message{min-height:24px;color:var(--orange)}@media(max-width:650px){.item{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.wide{grid-column:auto}}
 </style>
 <script src="./config.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script defer src="./admin.js"></script>
 </head>
 <body>
@@ -24,9 +25,9 @@
 </div>
 <section class="panel">
   <h2>Імпорт товарів з Prom.ua</h2>
-  <p class="muted">Завантажте CSV-експорт. Усі рядки спочатку потраплять у чергу перевірки й не опублікуються автоматично.</p>
+  <p class="muted">Завантажте CSV або XLSX-експорт. Усі рядки спочатку потраплять у чергу перевірки й не опублікуються автоматично.</p>
   <div class="toolbar">
-    <input id="promFile" type="file" accept=".csv,text/csv">
+    <input id="promFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
     <button class="btn" id="stagePromImport" type="button">Перевірити та додати в чергу</button>
   </div>
   <div id="promImportStatus" class="muted" role="status" aria-live="polite"></div>
