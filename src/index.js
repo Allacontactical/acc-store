@@ -175,28 +175,53 @@ async function handleAdminImport(request, env, user) {
   await env.DB.prepare("INSERT INTO import_batches (id, source_name, total_items, imported_by, status) VALUES (?, ?, ?, ?, 'processing')")
     .bind(batchId, sourceName, rows.length, user.id).run();
   let inserted = 0;
-  for (let offset = 0; offset < rows.length; offset += 40) {
-    const statements = rows.slice(offset, offset + 40).map((row) => {
-      if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Invalid CSV row");
-      const raw = JSON.stringify(row);
-      if (raw.length > 180000) throw new Error("A CSV row is too large");
-      const title = String(row["Назва_позиції_укр"] || row["Назва_позиції"] || "").slice(0, 500);
-      const productId = String(row["Ідентифікатор_товару"] || row["Унікальний_ідентифікатор"] || "").slice(0, 80);
-      const promUrl = String(row["Продукт_на_сайті"] || "").slice(0, 2000);
-      const price = String(row["Ціна"] || "").slice(0, 40);
-      const currency = String(row["Валюта"] || "").slice(0, 12);
-      const quantity = row["Кількість"] == null ? "" : String(row["Кількість"]).slice(0, 40);
-      const availability = String(row["Наявність"] || "").slice(0, 40);
-      const imageText = String(row["Посилання_зображення"] || "");
-      const images = imageText.split(/\s*,\s*/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 30);
-      return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
-        .bind(batchId, productId, title, promUrl, price, currency, quantity, availability, JSON.stringify(images), raw);
-    });
-    await env.DB.batch(statements);
-    inserted += statements.length;
+  try {
+    for (let offset = 0; offset < rows.length; offset += 40) {
+      const statements = rows.slice(offset, offset + 40).map((row) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("Invalid CSV row");
+        const raw = JSON.stringify(row);
+        if (raw.length > 180000) throw new Error("A CSV row is too large");
+        const title = String(row["Назва_позиції_укр"] || row["Назва_позиції"] || "").slice(0, 500);
+        const productId = String(row["Ідентифікатор_товару"] || row["Унікальний_ідентифікатор"] || "").slice(0, 80);
+        const promUrl = String(row["Продукт_на_сайті"] || "").slice(0, 2000);
+        const price = String(row["Ціна"] || "").slice(0, 40);
+        const currency = String(row["Валюта"] || "").slice(0, 12);
+        const quantity = row["Кількість"] == null ? "" : String(row["Кількість"]).slice(0, 40);
+        const availability = String(row["Наявність"] || "").slice(0, 40);
+        const imageText = String(row["Посилання_зображення"] || "");
+        const images = imageText.split(/\\s*,\\s*/).map(x => x.trim()).filter(x => /^https?:\\/\\//i.test(x)).slice(0, 30);
+        return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
+          .bind(batchId, productId, title, promUrl, price, currency, quantity, availability, JSON.stringify(images), raw);
+      });
+      // D1 batch is transactional for this chunk; count only after it succeeds.
+      await env.DB.batch(statements);
+      inserted += statements.length;
+    }
+    await env.DB.prepare("UPDATE import_batches SET status = 'ready', imported_items = ? WHERE id = ? AND status = 'processing'")
+      .bind(inserted, batchId).run();
+    return json({ ok: true, batch_id: batchId, imported_items: inserted, review_status: "pending" }, 201);
+  } catch (error) {
+    // Never leave a partially imported batch available for review.
+    // Mark it failed and remove its rows together in one D1 transaction.
+    try {
+      await env.DB.batch([
+        env.DB.prepare("UPDATE import_batches SET status = 'failed', imported_items = 0 WHERE id = ?").bind(batchId),
+        env.DB.prepare("DELETE FROM import_items WHERE batch_id = ?").bind(batchId)
+      ]);
+    } catch (cleanupError) {
+      return json({
+        error: "Import failed and cleanup could not be confirmed",
+        batch_id: batchId,
+        detail: String(error.message || error),
+        cleanup_detail: String(cleanupError.message || cleanupError)
+      }, 500);
+    }
+    return json({
+      error: "Import failed; partial rows were removed and the batch was marked failed",
+      batch_id: batchId,
+      detail: String(error.message || error)
+    }, 400);
   }
-  await env.DB.prepare("UPDATE import_batches SET status = 'ready', imported_items = ? WHERE id = ?").bind(inserted, batchId).run();
-  return json({ ok: true, batch_id: batchId, imported_items: inserted, review_status: "pending" }, 201);
 }
 async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
