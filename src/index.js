@@ -189,7 +189,7 @@ async function handleAdminImport(request, env, user) {
         const quantity = row["Кількість"] == null ? "" : String(row["Кількість"]).slice(0, 40);
         const availability = String(row["Наявність"] || "").slice(0, 40);
         const imageText = String(row["Посилання_зображення"] || "");
-        const images = imageText.split(/\\s*,\\s*/).map(x => x.trim()).filter(x => /^https?:\\/\\//i.test(x)).slice(0, 30);
+        const images = imageText.split(/\s*,\s*/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 30);
         return env.DB.prepare("INSERT INTO import_items (batch_id, product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')")
           .bind(batchId, productId, title, promUrl, price, currency, quantity, availability, JSON.stringify(images), raw);
       });
