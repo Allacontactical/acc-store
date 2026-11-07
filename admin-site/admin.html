@@ -56,7 +56,7 @@ small{color:var(--muted)}@media(max-width:600px){main{width:96%;margin-top:14px}
    <label class="edit-wide">Название<input id="editTitle" maxlength="500" required></label>
    <label>Бренд<input id="editBrand" maxlength="120"></label>
    <label>Категория<input id="editCategory" maxlength="160"></label>
-   <label class="edit-wide">Описание<textarea id="editDescription" maxlength="12000"></textarea></label>
+   <label class="edit-wide">Описание (украинское)<textarea id="editDescription" maxlength="12000"></textarea></label>
    <label>Цена<input id="editPrice" maxlength="40"></label>
    <label>Валюта<input id="editCurrency" maxlength="12"></label>
    <label>Количество<input id="editQuantity" maxlength="40" placeholder="Оставьте пустым, если под заказ"></label>
@@ -82,8 +82,8 @@ function openEditor(item){
  editingItemId=item.id;
  let urls=[];try{urls=JSON.parse(item.image_urls_json||"[]")}catch(_){}
  let raw={};try{raw=JSON.parse(item.raw_json||"{}")}catch(_){}
- $("editTitle").value=item.title||"";$("editBrand").value=raw["Бренд"]||"";$("editCategory").value=raw["Категорія"]||"";
- $("editDescription").value=raw["Опис"]||raw["Опис_позиції_укр"]||"";
+ $("editTitle").value=item.title||"";$("editBrand").value=raw["Виробник"]||raw["Бренд"]||"";$("editCategory").value=raw["Назва_групи"]||raw["Назва_групи_укр"]||raw["Категорія"]||"";
+ $("editDescription").value=raw["Опис_укр"]||raw["Опис_позиції_укр"]||raw["Опис"]||"";
  $("editPrice").value=item.price||"";$("editCurrency").value=item.currency||"UAH";
  $("editQuantity").value=item.quantity??"";$("editAvailability").value=item.raw_availability||"";
  $("editPromUrl").value=item.prom_url||"";$("editImages").value=urls.join("\n");msg("editMsg","");
