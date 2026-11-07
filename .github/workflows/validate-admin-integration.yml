@@ -10,6 +10,8 @@ on:
       - "migrations/**"
       - "wrangler.jsonc"
       - ".github/workflows/validate-admin-integration.yml"
+      - ".github/workflows/publish-acc-product.yml"
+      - ".github/workflows/deploy-worker.yml"
 
 jobs:
   validate:
@@ -21,6 +23,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Validate GitHub Actions workflow YAML
+        run: |
+          ruby -e 'require "yaml"; Dir[".github/workflows/*.yml"].each { |f| YAML.load_file(f); puts "#{f}: YAML OK" }'
+      - name: Smoke-test D1 migrations
+        run: |
+          python3 - <<'PY'
+          import pathlib, sqlite3
+          db = sqlite3.connect(":memory:")
+          db.executescript(pathlib.Path("migrations/0001_telegram_auth.sql").read_text())
+          db.executescript(pathlib.Path("migrations/0002_user_carts.sql").read_text())
+          db.execute("INSERT INTO users (telegram_user_id) VALUES (?)", ("smoke-test",))
+          db.commit()
+          for name in ["0003_admin_import_queue.sql", "0004_import_quantity.sql", "0005_publication_state.sql"]:
+              db.executescript(pathlib.Path("migrations/" + name).read_text())
+          columns = {row[1] for row in db.execute("PRAGMA table_info(import_items)")}
+          required = {"quantity", "is_published", "public_product_id", "publish_status", "publish_commit_sha"}
+          missing = required - columns
+          if missing:
+              raise SystemExit("Missing migration columns: " + ", ".join(sorted(missing)))
+          print("D1 migration smoke test OK")
+          PY
       - name: Check Worker JavaScript syntax
         run: node --input-type=module --check < src/index.js
       - name: Check admin page JavaScript
