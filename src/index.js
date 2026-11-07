@@ -312,7 +312,7 @@ async function handleAdmin(request, env, url) {
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const id = Number(payload?.id);
     if (!Number.isInteger(id) || id < 1) return json({ error: "Invalid item id" }, 400);
-    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
+    const item = await env.DB.prepare("SELECT id, product_id, public_product_id, title, prom_url, price, currency, quantity, raw_availability, image_urls_json, raw_json, review_status, is_published, publish_status FROM import_items WHERE id = ?").bind(id).first();
     if (!item) return json({ error: "Item not found" }, 404);
     if (item.review_status !== "approved") return json({ error: "Сначала одобрите товар" }, 409);
     if (item.publish_status === "queued") return json({ error: "Публикация этой позиции уже выполняется" }, 409);
