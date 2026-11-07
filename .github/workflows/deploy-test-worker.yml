@@ -70,6 +70,9 @@ jobs:
           grep -q 'id="editDialog"' /tmp/acc-admin.html
           grep -q 'Редактировать' /tmp/acc-admin.html
           grep -q 'Удалить из очереди' /tmp/acc-admin.html
+          grep -q 'id="manualForm"' /tmp/acc-admin.html
+          grep -q 'id="manualPhotos"' /tmp/acc-admin.html
+          grep -q 'convertToWebP' /tmp/acc-admin.html
           headers=$(curl --silent --show-error -i -X OPTIONS "$base/admin/import/item" \
             -H "Origin: https://allacontactical.com.ua" \
             -H "Access-Control-Request-Method: DELETE")
