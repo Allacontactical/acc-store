@@ -93,7 +93,8 @@ try {
   await page.getByText("Кількість: 3", { exact: false }).waitFor();
   await page.getByText("Кількість не вказана", { exact: false }).waitFor();
   await page.getByRole("button", { name: "Підтвердити" }).first().click();
-  await page.getByText("Імпортований товар підтверджено.", { exact: false }).waitFor();
+  await page.getByText("Тестовий товар ACC 2").waitFor();
+  if (await page.getByText("Тестовий товар ACC 1").count()) throw new Error("Підтверджений товар залишився у черзі.");
   if (approved.length !== 1 || pending.length !== 1) throw new Error("Дія підтвердження не оброблена тестовим API.");
   console.log("PASS: XLSX upload, 2 product rows, photos, quantity, delivery days, review queue and approve action.");
 } finally {
