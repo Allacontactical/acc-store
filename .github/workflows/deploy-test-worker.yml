@@ -38,7 +38,7 @@ jobs:
             TELEGRAM_WEBHOOK_SECRET
             ADMIN_TELEGRAM_ID
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TEST_TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
           TELEGRAM_BOT_USERNAME: AllaconTacticalTest_bot
@@ -109,9 +109,19 @@ jobs:
           reloaded="$(curl --fail-with-body --silent --show-error "$base/account/cart" -H "Authorization: Bearer $session_token")"
           echo "$reloaded" | jq -e '.cart["2534652617"] == 2 and .cart["2457811325"] == 1' >/dev/null
           echo "Authenticated profile and cart save/read round-trip passed"
+      - name: Verify test Telegram bot identity before webhook change
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TEST_TELEGRAM_BOT_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          identity=$(curl --fail --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe")
+          username=$(echo "$identity" | jq -r '.result.username // empty')
+          echo "Telegram bot username configured by test secret: @${username}"
+          test "$username" = "AllaconTacticalTest_bot"
       - name: Set test Telegram webhook
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TEST_TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
         run: |
           response=$(curl --fail-with-body --silent --show-error \
@@ -121,7 +131,7 @@ jobs:
           echo "$response" | jq -e '.ok == true' >/dev/null
       - name: Verify test Telegram bot identity and webhook
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TEST_TELEGRAM_BOT_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
