@@ -4,7 +4,7 @@ import vm from "node:vm";
 
 const adminSource=fs.readFileSync("admin/admin.js","utf8");
 const parserStart=adminSource.indexOf("function parsePromCSV(text){");
-const parserEnd=adminSource.indexOf("function promPlainText(value){",parserStart);
+const parserEnd=adminSource.indexOf("async function stagePromCSV(){",parserStart);
 assert.ok(parserStart>=0&&parserEnd>parserStart,"Prom CSV parser functions must exist");
 const parserSandbox=vm.createContext({});
 vm.runInContext(adminSource.slice(parserStart,parserEnd)+"\nglobalThis.parsePromCSV=parsePromCSV;globalThis.promRowsFromCSV=promRowsFromCSV;",parserSandbox);
