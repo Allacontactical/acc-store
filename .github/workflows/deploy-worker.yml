@@ -25,13 +25,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Generate webhook secret
-        id: webhook-secret
-        shell: bash
-        run: |
-          secret="$(openssl rand -hex 32)"
-          echo "::add-mask::$secret"
-          echo "secret=$secret" >> "$GITHUB_OUTPUT"
       - name: Verify admin access secret is configured
         shell: bash
         env:
@@ -46,6 +39,17 @@ jobs:
         run: |
           test -n "$ACC_CONTENTS_TOKEN" || { echo "Missing GitHub Actions secret ACC_CONTENTS_TOKEN (fine-grained token with Contents read/write access to Allacontactical/acc-store)"; exit 1; }
           echo "GitHub catalog publishing token is configured."
+      - name: Verify stable Telegram webhook secret is configured
+        shell: bash
+        env:
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+        run: |
+          if [[ ! "$TELEGRAM_WEBHOOK_SECRET" =~ ^[a-f0-9]{64}$ ]]; then
+            echo "Missing or invalid GitHub Actions secret TELEGRAM_WEBHOOK_SECRET."
+            echo "Create a persistent 64-character lowercase hex secret (for example: openssl rand -hex 32) and save it in repository Actions secrets."
+            exit 1
+          fi
+          echo "Stable Telegram webhook secret is configured."
       - name: List D1 databases accessible to deployment token
         run: npx --yes wrangler@4.157.0 d1 list --config wrangler.jsonc
         env:
@@ -68,7 +72,7 @@ jobs:
             ACC_CONTENTS_TOKEN
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
@@ -85,11 +89,11 @@ jobs:
       - name: Set production Telegram webhook
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ steps.webhook-secret.outputs.secret }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         run: |
-          response=$(curl --fail-with-body --silent --show-error \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
-            --data-urlencode "url=https://allacontactical-bot.allacontactical.workers.dev/webhook" \
+          response=$(curl --fail-with-body --silent --show-error \\
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \\
+            --data-urlencode "url=https://allacontactical-bot.allacontactical.workers.dev/webhook" \\
             --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}")
           echo "$response" | jq -e '.ok == true' >/dev/null
       - name: Verify Telegram bot identity and webhook delivery
@@ -102,4 +106,4 @@ jobs:
           echo "Telegram webhook status:"
           curl --fail-with-body --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo" | jq '{ok, result: {url: .result.url, pending_update_count: .result.pending_update_count, last_error_date: .result.last_error_date, last_error_message: .result.last_error_message, allowed_updates: .result.allowed_updates}}'
 
-# Redeploy after the production Telegram token was updated in GitHub Actions secrets.
+# Redeploy after production secrets are updated in GitHub Actions.
