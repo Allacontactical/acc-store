@@ -282,10 +282,12 @@ async function handleAdmin(request, env, url) {
     if (item.review_status !== "approved") return json({ error: "Сначала одобрите товар" }, 409);
     if (item.publish_status === "queued") return json({ error: "Публикация этой позиции уже выполняется" }, 409);
     const publicId = item.public_product_id || item.product_id || String(9000000000000000n + BigInt(item.id));
-    const duplicate = await env.DB.prepare("SELECT id FROM import_items WHERE id <> ? AND public_product_id = ? LIMIT 1").bind(id, publicId).first();
+    const duplicate = await env.DB.prepare("SELECT id FROM import_items WHERE id <> ? AND COALESCE(NULLIF(public_product_id, ''), product_id) = ? LIMIT 1").bind(id, publicId).first();
     if (duplicate) return json({ error: "Этот ID уже закреплён за позицией №" + duplicate.id }, 409);
     const product = buildPublishedProduct({ ...item, public_product_id: publicId });
-    await env.DB.prepare("UPDATE import_items SET public_product_id = ?, publish_status = 'queued' WHERE id = ?").bind(publicId, id).run();
+    // Claim the item atomically so two simultaneous publish requests cannot dispatch it twice.
+    const claimed = await env.DB.prepare("UPDATE import_items SET public_product_id = ?, publish_status = 'queued' WHERE id = ? AND review_status = 'approved' AND COALESCE(publish_status, '') <> 'queued'").bind(publicId, id).run();
+    if (!claimed.meta?.changes) return json({ error: "Публикация уже запущена или товар больше не одобрен" }, 409);
     try {
       await dispatchCatalogPublish(env, item, product);
       return json({ ok: true, id, public_product_id: publicId, publish_status: "queued" }, 202);
