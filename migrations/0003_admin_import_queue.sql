@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS import_items (
   prom_url TEXT NOT NULL DEFAULT '',
   price TEXT NOT NULL DEFAULT '',
   currency TEXT NOT NULL DEFAULT '',
+  quantity TEXT NOT NULL DEFAULT '',
   raw_availability TEXT NOT NULL DEFAULT '',
   image_urls_json TEXT NOT NULL DEFAULT '[]',
   raw_json TEXT NOT NULL,
