@@ -46,6 +46,8 @@ jobs:
           PY
       - name: Check Worker JavaScript syntax
         run: node --input-type=module --check < src/index.js
+      - name: Run Prom product mapping regression tests
+        run: node --test tests/*.test.mjs
       - name: Check admin page JavaScript
         run: |
           node <<'NODE'
