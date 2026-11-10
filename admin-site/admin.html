@@ -85,7 +85,7 @@ small{color:var(--muted)}@media(max-width:600px){main{width:96%;margin-top:14px}
 const $=id=>document.getElementById(id), API=location.origin;
 let token=sessionStorage.getItem("acc_admin_session")||"", selectedBatch="";
 function msg(id,text){$(id).textContent=text;}
-async function api(path,options={}){const headers=Object.assign({},options.headers||{},{Authorization:"Bearer "+token});const r=await fetch(API+path,Object.assign({},options,{headers,cache:"no-store"}));let data={};try{data=await r.json()}catch(_){}if(!r.ok)throw new Error([data.error,data.detail].filter(Boolean).join(": ")||("HTTP "+r.status));return data;}
+async function api(path,options={}){const headers=Object.assign({},options.headers||{},{Authorization:"Bearer "+token});const r=await fetch(API+path,Object.assign({},options,{headers,cache:"no-store"}));let data={};try{data=await r.json()}catch(_){}if(!r.ok){const parts=[data.error,data.detail,data.message].filter(Boolean);if(data.github_status)parts.push("GitHub API HTTP "+data.github_status);if(data.accepted_permissions)parts.push("accepted_permissions="+data.accepted_permissions);if(data.request_id)parts.push("request_id="+data.request_id);throw new Error(parts.join("; ")||("HTTP "+r.status));}return data;}
 let editingItemId=0;
 function openEditor(item){
  editingItemId=item.id;
