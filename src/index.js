@@ -295,6 +295,35 @@ async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
 
+  // Safe write-permission probe: sends a non-publishing event type that no workflow listens for.
+  if (url.pathname === "/admin/github-dispatch-check" && request.method === "POST") {
+    const token = env.ACC_CONTENTS_TOKEN;
+    if (!token) return json({ configured: false, error: "ACC_CONTENTS_TOKEN is missing" }, 503);
+    const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
+      method: "POST",
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "Authorization": "Bearer " + token,
+        "User-Agent": "AllaconTactical-ACC-Catalog-Publisher",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ event_type: "acc-permission-probe", client_payload: { diagnostic: true, source: "acc-admin" } })
+    });
+    const responseText = await response.text().catch(() => "");
+    let detail = {};
+    try { detail = responseText ? JSON.parse(responseText) : {}; } catch {}
+    return json({
+      configured: true,
+      github_status: response.status,
+      accepted_permissions: response.headers.get("x-accepted-github-permissions"),
+      request_id: response.headers.get("x-github-request-id"),
+      message: response.ok ? "Тестовое событие принято GitHub; публикация товара не запускалась." : String(detail.message || responseText || "empty response").replace(/\\s+/g, " ").slice(0, 400),
+      event_type: "acc-permission-probe",
+      product_workflow_triggered: false
+    }, response.ok ? 200 : 502);
+  }
+
   // Read-only diagnostics for the exact GitHub token used by catalog publishing.
   // This endpoint never returns the token and never triggers a repository dispatch.
   if (url.pathname === "/admin/github-token-check" && request.method === "GET") {
