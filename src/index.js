@@ -266,8 +266,18 @@ async function dispatchCatalogPublish(env, item, product) {
     body: JSON.stringify({ event_type: "acc-publish-product", client_payload: { item_id: item.id, product } })
   });
   if (response.status !== 204) {
-    const detail = await response.json().catch(() => ({}));
-    throw new Error("GitHub dispatch " + response.status + ": " + String(detail.message || "request failed").slice(0, 250));
+    const responseText = await response.text().catch(() => "");
+    let detail = {};
+    try { detail = responseText ? JSON.parse(responseText) : {}; } catch {}
+    const message = String(detail.message || responseText || "empty response").replace(/\\s+/g, " ").slice(0, 400);
+    const requestId = response.headers.get("x-github-request-id");
+    const acceptedPermissions = response.headers.get("x-accepted-github-permissions");
+    const diagnostics = [
+      message,
+      requestId ? "request_id=" + requestId : "",
+      acceptedPermissions ? "required_permissions=" + acceptedPermissions : ""
+    ].filter(Boolean).join("; ");
+    throw new Error("GitHub dispatch " + response.status + ": " + diagnostics);
   }
 }
 
