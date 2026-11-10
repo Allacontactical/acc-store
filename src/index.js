@@ -294,6 +294,35 @@ function isSafe281ImportBatch(batch, itemCount) {
 async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
+
+  // Read-only diagnostics for the exact GitHub token used by catalog publishing.
+  // This endpoint never returns the token and never triggers a repository dispatch.
+  if (url.pathname === "/admin/github-token-check" && request.method === "GET") {
+    const token = env.ACC_CONTENTS_TOKEN;
+    if (!token) return json({ configured: false, error: "ACC_CONTENTS_TOKEN is missing" }, 503);
+    const headers = {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + token,
+      "User-Agent": "AllaconTactical-ACC-Catalog-Publisher",
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+    const [userResponse, repoResponse] = await Promise.all([
+      fetch("https://api.github.com/user", { headers }),
+      fetch("https://api.github.com/repos/Allacontactical/acc-store", { headers })
+    ]);
+    const userData = await userResponse.json().catch(() => ({}));
+    const repoData = await repoResponse.json().catch(() => ({}));
+    return json({
+      configured: true,
+      github_user_status: userResponse.status,
+      github_login: userResponse.ok ? (userData.login || null) : null,
+      repository_status: repoResponse.status,
+      repository_full_name: repoResponse.ok ? (repoData.full_name || null) : null,
+      repository_permissions: repoResponse.ok ? (repoData.permissions || null) : null,
+      github_user_error: userResponse.ok ? null : String(userData.message || "GitHub user check failed").slice(0, 180),
+      repository_error: repoResponse.ok ? null : String(repoData.message || "GitHub repository check failed").slice(0, 180)
+    });
+  }
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
 
 
