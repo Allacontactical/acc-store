@@ -51,30 +51,44 @@ jobs:
           fi
           echo "Stable Telegram webhook secret is configured."
       - name: List D1 databases accessible to deployment token
-        run: npx --yes wrangler@4.157.0 d1 list --config wrangler.jsonc
+        run: npx --yes wrangler@4.160.0 d1 list --config wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Apply production D1 migrations
         run: |
-          npx --yes wrangler@4.157.0 d1 migrations apply acc-catalog-db --remote --config wrangler.jsonc
+          npx --yes wrangler@4.160.0 d1 migrations apply acc-catalog-db --remote --config wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      - name: Deploy production Worker
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --config wrangler.jsonc
-          secrets: |
-            TELEGRAM_BOT_TOKEN
-            TELEGRAM_WEBHOOK_SECRET
-            ADMIN_TELEGRAM_ID
-            ACC_CONTENTS_TOKEN
+      - name: Prepare production Worker secrets file
+        shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
           ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
+        run: |
+          umask 077
+          node <<'NODE'
+          const fs = require("node:fs");
+          const names = [
+            "TELEGRAM_BOT_TOKEN",
+            "TELEGRAM_WEBHOOK_SECRET",
+            "ADMIN_TELEGRAM_ID",
+            "ACC_CONTENTS_TOKEN"
+          ];
+          const secrets = {};
+          for (const name of names) {
+            const value = process.env[name];
+            if (!value) throw new Error(`Missing required secret: ${name}`);
+            secrets[name] = value;
+          }
+          fs.writeFileSync("/tmp/acc-production-secrets.json", JSON.stringify(secrets), { mode: 0o600 });
+          NODE
+          echo "Prepared the Worker secrets file without printing secret values."
+      - name: Deploy production Worker with secrets in the same version
+        run: npx --yes wrangler@4.160.0 deploy --config wrangler.jsonc --secrets-file /tmp/acc-production-secrets.json
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TELEGRAM_BOT_USERNAME: Allacontactical_bot
       - name: Verify production account redirect
         shell: bash
@@ -106,4 +120,4 @@ jobs:
           echo "Telegram webhook status:"
           curl --fail-with-body --silent --show-error "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo" | jq '{ok, result: {url: .result.url, pending_update_count: .result.pending_update_count, last_error_date: .result.last_error_date, last_error_message: .result.last_error_message, allowed_updates: .result.allowed_updates}}'
 
-# Redeploy after production secrets are updated in GitHub Actions.
+# Deploy code and secrets together so gradual-version state cannot block secret updates.
