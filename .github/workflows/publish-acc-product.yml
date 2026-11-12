@@ -67,6 +67,7 @@ jobs:
             }
           }
           if (!published || !commit) throw new Error('Could not confirm product commit on main');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'commit_sha=' + commit + '\n');
           NODE
       - name: Confirm publication in ACC admin database
         if: always()
