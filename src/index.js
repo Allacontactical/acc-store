@@ -680,7 +680,7 @@ export default {
       if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
       const batchId = url.searchParams.get("batch_id") || "";
       if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
-      const result = await env.DB.prepare("SELECT id, product_id, title, image_urls_json, public_product_id, is_published, publish_status FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+      const result = await env.DB.prepare("SELECT id, product_id, title, quantity, image_urls_json, public_product_id, is_published, publish_status FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
       return json({ items: result.results || [] });
     }
 
