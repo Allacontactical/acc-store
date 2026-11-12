@@ -738,8 +738,9 @@ export default {
         return json({ error: "Expected 1–10 image source URLs" }, 400);
       }
       const results = [];
-      try {
-        for (const source of sources) {
+      const failures = [];
+      for (const source of sources) {
+        try {
           const parsed = new URL(source);
           if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
             throw new Error("Only HTTPS images.prom.ua sources are allowed");
@@ -750,7 +751,7 @@ export default {
           });
           if (!response.ok) throw new Error("Source image returned HTTP " + response.status);
           const type = (response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
-          if (type !== "image/webp") throw new Error("WebP conversion unavailable for source: " + parsed.pathname);
+          if (type !== "image/webp") throw new Error("WebP conversion unavailable; received " + (type || "unknown content type"));
           const bytes = await response.arrayBuffer();
           if (!bytes.byteLength || bytes.byteLength > 8 * 1024 * 1024) throw new Error("Converted image size is invalid or exceeds 8 MB");
           const view = new Uint8Array(bytes);
@@ -761,11 +762,11 @@ export default {
             httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
           });
           results.push({ source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength });
+        } catch (error) {
+          failures.push({ source, error: String(error.message || error).slice(0, 220) });
         }
-        return json({ ok: true, images: results }, 201);
-      } catch (error) {
-        return json({ error: "Photo processing stopped; existing catalog images were not changed", detail: String(error.message || error).slice(0, 300), completed: results }, 502);
       }
+      return json({ ok: true, images: results, failures }, 201);
     }
 
     // Keep this Worker callback deployment in sync with the ACC_CONTENTS_TOKEN repository secret.
