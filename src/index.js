@@ -668,6 +668,49 @@ export default {
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
 
+    // Internal photo pipeline: fetch trusted Prom images, convert to WebP at the edge, and store in R2.
+    if (url.pathname === "/internal/photo-pipeline" && request.method === "POST") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+      let payload;
+      try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const sources = payload?.sources;
+      if (!Array.isArray(sources) || sources.length < 1 || sources.length > 10 ||
+          sources.some(source => typeof source !== "string" || source.length > 2000)) {
+        return json({ error: "Expected 1–10 image source URLs" }, 400);
+      }
+      const results = [];
+      try {
+        for (const source of sources) {
+          const parsed = new URL(source);
+          if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
+            throw new Error("Only HTTPS images.prom.ua sources are allowed");
+          }
+          const response = await fetch(parsed.toString(), {
+            cf: { image: { format: "webp", quality: 86, width: 2200, fit: "scale-down" } },
+            signal: AbortSignal.timeout(25000)
+          });
+          if (!response.ok) throw new Error("Source image returned HTTP " + response.status);
+          const type = (response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+          if (type !== "image/webp") throw new Error("WebP conversion unavailable for source: " + parsed.pathname);
+          const bytes = await response.arrayBuffer();
+          if (!bytes.byteLength || bytes.byteLength > 8 * 1024 * 1024) throw new Error("Converted image size is invalid or exceeds 8 MB");
+          const view = new Uint8Array(bytes);
+          if (view.length < 12 || String.fromCharCode(...view.slice(0, 4)) !== "RIFF" ||
+              String.fromCharCode(...view.slice(8, 12)) !== "WEBP") throw new Error("Converted file is not a valid WebP image");
+          const key = randomToken(12) + ".webp";
+          await env.PRODUCT_IMAGES.put(key, bytes, {
+            httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
+          });
+          results.push({ source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength });
+        }
+        return json({ ok: true, images: results }, 201);
+      } catch (error) {
+        return json({ error: "Photo processing stopped; existing catalog images were not changed", detail: String(error.message || error).slice(0, 300), completed: results }, 502);
+      }
+    }
+
     // Keep this Worker callback deployment in sync with the ACC_CONTENTS_TOKEN repository secret.
     if (url.pathname === "/internal/publish-callback" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
