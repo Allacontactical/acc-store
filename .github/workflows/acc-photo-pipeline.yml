@@ -25,8 +25,10 @@ jobs:
   process:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout catalog
+      - name: Checkout production catalog
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Convert Prom photos and upload to R2
         env:
@@ -77,7 +79,7 @@ jobs:
             fs.writeFileSync(file, JSON.stringify(products, null, 2) + "\n");
             const { execFileSync } = require("node:child_process");
             execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
-            execFileSync("git", ["config", "user.email", "41898282+users.noreply.github.com"]);
+            execFileSync("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
             execFileSync("git", ["add", file]);
             execFileSync("git", ["commit", "-m", "Store optimized ACC product photos in R2"]);
             execFileSync("git", ["push", "origin", "HEAD:main"]);
