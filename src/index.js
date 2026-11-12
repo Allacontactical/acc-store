@@ -668,6 +668,22 @@ export default {
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
 
+    // Read-only inventory endpoints let the photo workflow use the approved 281-item import batch as its source of truth.
+    if (url.pathname === "/internal/photo-pipeline/batches" && request.method === "GET") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      const result = await env.DB.prepare("SELECT id, source_name, total_items, imported_items, status, created_at FROM import_batches ORDER BY created_at DESC LIMIT 30").all();
+      return json({ batches: result.results || [] });
+    }
+    if (url.pathname === "/internal/photo-pipeline/items" && request.method === "GET") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      const batchId = url.searchParams.get("batch_id") || "";
+      if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
+      const result = await env.DB.prepare("SELECT id, product_id, title, image_urls_json, public_product_id, is_published, publish_status FROM import_items WHERE batch_id = ? ORDER BY id LIMIT 400").bind(batchId).all();
+      return json({ items: result.results || [] });
+    }
+
     // Internal photo pipeline: fetch trusted Prom images, convert to WebP at the edge, and store in R2.
     if (url.pathname === "/internal/photo-pipeline" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
