@@ -119,31 +119,22 @@ jobs:
                   if (typeof source !== "string") throw new Error("Non-string image URL in item " + item.id);
                   if (source.includes("/product-images/")) {
                     await verifyR2(source);
-                    next.push(source);
                     alreadyLocal++;
                   } else {
                     const parsed = new URL(source);
                     if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") throw new Error("Unexpected image host for item " + item.id + ": " + parsed.hostname);
-                    if (cache.has(source)) next.push(cache.get(source));
-                    else pending.push(source);
+                    if (!cache.has(source) && !pending.includes(source)) pending.push(source);
                   }
                 }
                 if (pending.length) {
                   const done = await convert(pending);
                   for (const result of done) { cache.set(result.source, result.url); converted++; }
-                  const resolved = new Map(done.map(x => [x.source, x.url]));
-                  for (const source of chunk) {
-                    if (resolved.has(source)) next.push(resolved.get(source));
-                    else if (cache.has(source) && !next.includes(cache.get(source))) next.push(cache.get(source));
-                  }
                 }
-                // Rebuild the chunk in original order, including cached duplicates.
-                const chunkResolved = [];
                 for (const source of chunk) {
-                  if (source.includes("/product-images/")) chunkResolved.push(source);
-                  else if (cache.has(source)) chunkResolved.push(cache.get(source));
+                  if (source.includes("/product-images/")) next.push(source);
+                  else if (cache.has(source)) next.push(cache.get(source));
+                  else throw new Error("Missing converted image mapping for item " + item.id);
                 }
-                next.splice(next.length - chunkResolved.length, chunkResolved.length, ...chunkResolved);
               }
               if (next.length !== images.length) throw new Error("Image mapping count mismatch for item " + item.id);
               sourceRefs += images.length;
