@@ -43,7 +43,25 @@ small{color:var(--muted)}@media(max-width:600px){main{width:96%;margin-top:14px}
   <div class="edit-grid">
    <label class="edit-wide">Название товара<input id="manualTitle" maxlength="500" required></label>
    <label>Бренд<input id="manualBrand" maxlength="120"></label>
-   <label>Категория<input id="manualCategory" maxlength="160"></label>
+   <label>Категория<select id="manualCategory" required>
+    <option value="">Оберіть категорію</option>
+    <option value="Аксесуари">Аксесуари</option>
+    <option value="Аксесуари для полювання">Аксесуари для полювання</option>
+    <option value="Взуття для полювання, мисливські черевики">Взуття для полювання, мисливські черевики</option>
+    <option value="Мисливські костюми , Куртки та Жилети">Мисливські костюми , Куртки та Жилети</option>
+    <option value="Мисливські костюми, куртки та жилети">Мисливські костюми, куртки та жилети</option>
+    <option value="Мисливські сорочки">Мисливські сорочки</option>
+    <option value="Мисливські худі, пуловери, футболкі">Мисливські худі, пуловери, футболкі</option>
+    <option value="Мисливські шапки, кепки, бафи.">Мисливські шапки, кепки, бафи.</option>
+    <option value="Мисливські штани. Нагрудники.">Мисливські штани. Нагрудники.</option>
+    <option value="Одяг для риболовлі">Одяг для риболовлі</option>
+    <option value="Розпродаж!!!">Розпродаж!!!</option>
+    <option value="Тактичне взуття">Тактичне взуття</option>
+    <option value="Тактичне спорядження та аксесуари">Тактичне спорядження та аксесуари</option>
+    <option value="Тактичний одяг">Тактичний одяг</option>
+    <option value="Тактичний одяг та спорядження">Тактичний одяг та спорядження</option>
+    <option value="Тактичний одяг та спорядження.">Тактичний одяг та спорядження.</option>
+   </select></label>
    <label>Цена<input id="manualPrice" maxlength="40" required></label>
    <label>Валюта<input id="manualCurrency" maxlength="12" value="UAH"></label>
    <label>Количество<input id="manualQuantity" maxlength="40" placeholder="Пусто, если под заказ"></label>
