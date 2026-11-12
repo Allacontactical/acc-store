@@ -1,6 +1,10 @@
 name: ACC photo pipeline
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/acc-photo-pipeline.yml"
   workflow_dispatch:
     inputs:
       max_products:
@@ -33,8 +37,8 @@ jobs:
       - name: Convert Prom photos and upload to R2
         env:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
-          MAX_PRODUCTS: ${{ inputs.max_products }}
-          WRITE_CATALOG: ${{ inputs.write_catalog }}
+          MAX_PRODUCTS: ${{ inputs.max_products || '1' }}
+          WRITE_CATALOG: ${{ inputs.write_catalog || false }}
         run: |
           node <<'NODE'
           const fs = require("node:fs");
