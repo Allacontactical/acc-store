@@ -665,6 +665,7 @@ export default {
     if (request.method === "POST" && url.pathname === "/auth/start") return withCors(await handleAuthStart(request, env), request);
     if (request.method === "POST" && url.pathname === "/auth/status") return withCors(await handleAuthStatus(request, env), request);
 
+    // Keep this Worker callback deployment in sync with the ACC_CONTENTS_TOKEN repository secret.
     if (url.pathname === "/internal/publish-callback" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
       if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
