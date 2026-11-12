@@ -358,6 +358,27 @@ async function handleAdmin(request, env, url) {
     return json({ ok: true, batch_id: batchId, approved: 281 });
   }
 
+  if (url.pathname === "/admin/import/batch/reconcile" && request.method === "POST") {
+    let payload;
+    try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const batchId = String(payload?.batch_id || "");
+    if (!/^[a-f0-9]{24}$/.test(batchId)) return json({ error: "Invalid batch_id" }, 400);
+    const batch = await env.DB.prepare("SELECT id, source_name, total_items, imported_items, status FROM import_batches WHERE id = ?").bind(batchId).first();
+    const counts = await env.DB.prepare("SELECT COUNT(*) AS total FROM import_items WHERE batch_id = ?").bind(batchId).first();
+    if (!isSafe281ImportBatch(batch, counts?.total)) return json({ error: "Сверка разрешена только для полного пакета ACC из 281 товара." }, 409);
+    const token = env.ACC_CONTENTS_TOKEN;
+    if (!token) return json({ error: "ACC_CONTENTS_TOKEN is missing" }, 503);
+    const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/actions/workflows/publish-acc-product.yml/runs?per_page=100", {
+      headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token, "User-Agent": "AllaconTactical-ACC-Catalog-Publisher", "X-GitHub-Api-Version": "2022-11-28" }
+    });
+    if (!response.ok) return json({ error: "Не удалось проверить активные запуски GitHub", status: response.status }, 502);
+    const data = await response.json();
+    const active = (data.workflow_runs || []).filter(run => ["queued", "in_progress", "waiting", "requested", "pending"].includes(run.status));
+    if (active.length) return json({ ok: false, active_runs: active.length, message: "Есть активные запуски публикации. Сверка отложена, чтобы не затронуть выполняющиеся товары." }, 409);
+    const reset = await env.DB.prepare("UPDATE import_items SET publish_status = 'failed' WHERE batch_id = ? AND review_status = 'approved' AND publish_status = 'queued' AND is_published = 0").bind(batchId).run();
+    return json({ ok: true, reset: Number(reset.meta?.changes || 0), message: "Зависшие статусы восстановлены; опубликованные товары не затронуты." });
+  }
+
   if (url.pathname === "/admin/import/publish" && request.method === "POST") {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
