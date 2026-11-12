@@ -1,3 +1,4 @@
+# Re-run after fixing the Worker R2 image-key route validation.
 name: ACC photo pipeline
 
 on:
