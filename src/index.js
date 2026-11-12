@@ -656,7 +656,7 @@ export default {
     }
     if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
       const object = request.method === "HEAD"
         ? await env.PRODUCT_IMAGES.head(key)
         : await env.PRODUCT_IMAGES.get(key);
