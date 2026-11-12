@@ -684,6 +684,47 @@ export default {
       return json({ items: result.results || [] });
     }
 
+    if (url.pathname === "/internal/photo-pipeline/save" && request.method === "POST") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      let payload;
+      try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const batchId = String(payload?.batch_id || "");
+      const updates = payload?.updates;
+      if (!/^[a-f0-9]{24}$/.test(batchId) || !Array.isArray(updates) || updates.length < 1 || updates.length > 400) {
+        return json({ error: "Invalid batch or photo updates" }, 400);
+      }
+      const ids = new Set();
+      for (const item of updates) {
+        if (!Number.isInteger(item?.id) || item.id < 1 || ids.has(item.id) || !Array.isArray(item.images) || item.images.length > 30) {
+          return json({ error: "Invalid item photo update" }, 400);
+        }
+        ids.add(item.id);
+        for (const image of item.images) {
+          if (typeof image !== "string" || image.length > 2000) return json({ error: "Invalid image URL" }, 400);
+          let parsed;
+          try { parsed = new URL(image); } catch { return json({ error: "Invalid image URL" }, 400); }
+          const ownImage = parsed.origin === url.origin && /^\/product-images\/[a-f0-9]{24}\.webp$/.test(parsed.pathname);
+          const sourceImage = parsed.protocol === "https:" && parsed.hostname === "images.prom.ua";
+          if (!ownImage && !sourceImage) return json({ error: "Image URL is outside the allowed sources" }, 400);
+        }
+      }
+      const statements = updates.map(item => env.DB.prepare(
+        "UPDATE import_items SET image_urls_json = ? WHERE id = ? AND batch_id = ?"
+      ).bind(JSON.stringify(item.images), item.id, batchId));
+      let updated = 0;
+      try {
+        for (let offset = 0; offset < statements.length; offset += 40) {
+          const result = await env.DB.batch(statements.slice(offset, offset + 40));
+          updated += result.reduce((sum, row) => sum + (row.meta?.changes || 0), 0);
+        }
+      } catch (error) {
+        return json({ error: "Photo references were only partially saved; retry is safe", updated, detail: String(error.message || error).slice(0, 300) }, 500);
+      }
+      if (updated !== updates.length) return json({ error: "Some import items were not found in the selected batch", updated, expected: updates.length }, 409);
+      return json({ ok: true, batch_id: batchId, updated });
+    }
+
     // Internal photo pipeline: fetch trusted Prom images, convert to WebP at the edge, and store in R2.
     if (url.pathname === "/internal/photo-pipeline" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
