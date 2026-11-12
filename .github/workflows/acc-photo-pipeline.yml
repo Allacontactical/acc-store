@@ -91,7 +91,8 @@ jobs:
             const updates = [];
             const products = JSON.parse(fs.readFileSync("products.json", "utf8"));
             const catalog = new Map(products.map(p => [String(p.id), p]));
-            let sourceRefs = 0, converted = 0, alreadyLocal = 0, blankItems = 0, catalogUpdated = 0;\n            const failures = [];
+            let sourceRefs = 0, converted = 0, alreadyLocal = 0, blankItems = 0, catalogUpdated = 0;
+            const failures = [];
 
             async function verifyR2(url) {
               const r = await fetch(url);
