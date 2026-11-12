@@ -737,9 +737,7 @@ export default {
           sources.some(source => typeof source !== "string" || source.length > 2000)) {
         return json({ error: "Expected 1–10 image source URLs" }, 400);
       }
-      const results = [];
-      const failures = [];
-      for (const source of sources) {
+      const outcomes = await Promise.all(sources.map(async source => {
         try {
           const parsed = new URL(source);
           if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
@@ -761,11 +759,13 @@ export default {
           await env.PRODUCT_IMAGES.put(key, bytes, {
             httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
           });
-          results.push({ source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength });
+          return { source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength };
         } catch (error) {
-          failures.push({ source, error: String(error.message || error).slice(0, 220) });
+          return { source, error: String(error.message || error).slice(0, 220) };
         }
-      }
+      }));
+      const results = outcomes.filter(item => item.url);
+      const failures = outcomes.filter(item => !item.url);
       return json({ ok: true, images: results, failures }, 201);
     }
 
