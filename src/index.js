@@ -654,12 +654,14 @@ export default {
       const assetUrl = new URL("/admin.html", request.url);
       return env.ASSETS.fetch(new Request(assetUrl, request));
     }
-    if (request.method === "GET" && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
-      const object = await env.PRODUCT_IMAGES.get(key);
+      if (!/^[a-f0-9]{24}\\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      const object = request.method === "HEAD"
+        ? await env.PRODUCT_IMAGES.head(key)
+        : await env.PRODUCT_IMAGES.get(key);
       if (!object) return new Response("Not found", { status: 404 });
-      return new Response(object.body, { headers: {
+      return new Response(request.method === "HEAD" ? null : object.body, { headers: {
         "Content-Type": object.httpMetadata?.contentType || "image/webp",
         "Cache-Control": object.httpMetadata?.cacheControl || "public, max-age=31536000, immutable",
         "ETag": object.httpEtag
