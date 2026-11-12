@@ -33,24 +33,40 @@ jobs:
           const { execFileSync } = require('node:child_process');
           const product = JSON.parse(process.env.PRODUCT_JSON || 'null');
           if (!product || !/^[0-9]{1,20}$/.test(String(product.id))) throw new Error('Invalid product payload');
-          const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
-          if (!Array.isArray(products)) throw new Error('products.json must contain an array');
-          const index = products.findIndex(item => String(item.id) === String(product.id));
-          if (index >= 0) products[index] = { ...products[index], ...product };
-          else products.push(product);
-          fs.writeFileSync('products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');
           execFileSync('git', ['config', 'user.name', 'github-actions[bot]']);
           execFileSync('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
-          execFileSync('git', ['add', 'products.json']);
-          let commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-          try {
-            execFileSync('git', ['diff', '--cached', '--quiet']);
-          } catch {
-            execFileSync('git', ['commit', '-m', 'Publish ACC product ' + product.id]);
-            execFileSync('git', ['push', 'origin', 'HEAD:main']);
-            commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          let commit = '';
+          let published = false;
+          // Rebuild from the newest main on every attempt to avoid losing concurrent catalog updates.
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            execFileSync('git', ['fetch', 'origin', 'main']);
+            execFileSync('git', ['reset', '--hard', 'origin/main']);
+            const products = JSON.parse(fs.readFileSync('products.json', 'utf8'));
+            if (!Array.isArray(products)) throw new Error('products.json must contain an array');
+            const index = products.findIndex(item => String(item.id) === String(product.id));
+            if (index >= 0) products[index] = { ...products[index], ...product };
+            else products.push(product);
+            fs.writeFileSync('products.json', JSON.stringify(products, null, 2) + '\n', 'utf8');
+            execFileSync('git', ['add', 'products.json']);
+            try {
+              execFileSync('git', ['diff', '--cached', '--quiet']);
+              commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+              published = true; // Product data already matches main.
+              break;
+            } catch {
+              execFileSync('git', ['commit', '-m', 'Publish ACC product ' + product.id]);
+            }
+            try {
+              execFileSync('git', ['push', 'origin', 'HEAD:main']);
+              commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+              published = true;
+              break;
+            } catch (error) {
+              console.log('Push attempt ' + attempt + ' lost a race; retrying from latest main.');
+              if (attempt === 5) throw error;
+            }
           }
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'commit_sha=' + commit + '\n');
+          if (!published || !commit) throw new Error('Could not confirm product commit on main');
           NODE
       - name: Confirm publication in ACC admin database
         if: always()
