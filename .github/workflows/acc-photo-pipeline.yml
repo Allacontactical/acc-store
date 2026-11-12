@@ -91,7 +91,7 @@ jobs:
             const updates = [];
             const products = JSON.parse(fs.readFileSync("products.json", "utf8"));
             const catalog = new Map(products.map(p => [String(p.id), p]));
-            let sourceRefs = 0, converted = 0, alreadyLocal = 0, blankItems = 0, catalogUpdated = 0;
+            let sourceRefs = 0, converted = 0, alreadyLocal = 0, blankItems = 0, catalogUpdated = 0;\n            const failures = [];
 
             async function verifyR2(url) {
               const r = await fetch(url);
@@ -101,9 +101,9 @@ jobs:
             async function convert(urls) {
               const r = await fetch(base, { method: "POST", headers, body: JSON.stringify({ sources: urls }) });
               const result = await r.json();
-              if (!r.ok || !result.ok) throw new Error("Image conversion failed: " + JSON.stringify(result));
-              for (const item of result.images) await verifyR2(item.url);
-              return result.images;
+              if (!r.ok || !result.ok) throw new Error("Image conversion request failed: " + JSON.stringify(result));
+              for (const item of result.images || []) await verifyR2(item.url);
+              return result;
             }
 
             for (const item of work) {
@@ -128,7 +128,11 @@ jobs:
                 }
                 if (pending.length) {
                   const done = await convert(pending);
-                  for (const result of done) { cache.set(result.source, result.url); converted++; }
+                  for (const result of done.images || []) { cache.set(result.source, result.url); converted++; }
+                  for (const failed of done.failures || []) {
+                    cache.set(failed.source, failed.source);
+                    failures.push({ item_id: item.id, source: failed.source, error: failed.error });
+                  }
                 }
                 for (const source of chunk) {
                   if (source.includes("/product-images/")) next.push(source);
@@ -168,6 +172,6 @@ jobs:
                 execFileSync("git", ["push", "origin", "HEAD:main"]);
               }
             }
-            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: updates.length, catalog_written: process.env.WRITE_CATALOG === "true" }));
+            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, failed_images: failures.length, failure_examples: failures.slice(0, 20), items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: updates.length, catalog_written: process.env.WRITE_CATALOG === "true" }));
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
