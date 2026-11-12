@@ -1,9 +1,20 @@
 name: Publish approved ACC product
 
 on:
-  repository_dispatch:
-    types:
-      - acc-publish-product
+  workflow_dispatch:
+    inputs:
+      diagnostic:
+        description: "Run safe diagnostic only"
+        required: true
+        type: boolean
+      item_id:
+        description: "ACC import item ID"
+        required: false
+        type: string
+      product_json:
+        description: "Product JSON payload"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -14,7 +25,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  diagnostic:
+    if: inputs.diagnostic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm safe dispatch
+        run: echo "Diagnostic dispatch received; no product will be published."
+
   publish:
+    if: ${{ !inputs.diagnostic }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout production catalog
@@ -26,7 +45,7 @@ jobs:
       - name: Update products.json
         id: publish
         env:
-          PRODUCT_JSON: ${{ toJson(github.event.client_payload.product) }}
+          PRODUCT_JSON: ${{ inputs.product_json }}
         run: |
           node <<'NODE'
           const fs = require('node:fs');
@@ -73,7 +92,7 @@ jobs:
         if: always()
         env:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
-          ITEM_ID: ${{ github.event.client_payload.item_id }}
+          ITEM_ID: ${{ inputs.item_id }}
           SUCCESS: ${{ steps.publish.outcome == 'success' }}
           COMMIT_SHA: ${{ steps.publish.outputs.commit_sha }}
         run: |

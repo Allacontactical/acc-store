@@ -259,26 +259,22 @@ function buildPublishedProduct(item) {
 async function dispatchCatalogPublish(env, item, product) {
   const token = env.ACC_CONTENTS_TOKEN;
   if (!token) throw new Error("Не настроен секрет ACC_CONTENTS_TOKEN для публикации в каталог.");
-  const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
+  const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/actions/workflows/publish-acc-product.yml/dispatches", {
     method: "POST",
     headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token,
       "User-Agent": "AllaconTactical-ACC-Catalog-Publisher",
       "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
-    body: JSON.stringify({ event_type: "acc-publish-product", client_payload: { item_id: item.id, product } })
+    body: JSON.stringify({ ref: "main", inputs: { diagnostic: "false", item_id: String(item.id), product_json: JSON.stringify(product) } })
   });
   if (response.status !== 204) {
     const responseText = await response.text().catch(() => "");
     let detail = {};
     try { detail = responseText ? JSON.parse(responseText) : {}; } catch {}
-    const message = String(detail.message || responseText || "empty response").replace(/\\s+/g, " ").slice(0, 400);
+    const message = String(detail.message || responseText || "empty response").replace(/\s+/g, " ").slice(0, 400);
     const requestId = response.headers.get("x-github-request-id");
     const acceptedPermissions = response.headers.get("x-accepted-github-permissions");
-    const diagnostics = [
-      message,
-      requestId ? "request_id=" + requestId : "",
-      acceptedPermissions ? "required_permissions=" + acceptedPermissions : ""
-    ].filter(Boolean).join("; ");
-    throw new Error("GitHub dispatch " + response.status + ": " + diagnostics);
+    const diagnostics = [message, requestId ? "request_id=" + requestId : "", acceptedPermissions ? "required_permissions=" + acceptedPermissions : ""].filter(Boolean).join("; ");
+    throw new Error("GitHub workflow dispatch " + response.status + ": " + diagnostics);
   }
 }
 
@@ -295,33 +291,19 @@ async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
 
-  // Safe write-permission probe: sends a non-publishing event type that no workflow listens for.
+  // Safe workflow_dispatch probe. Diagnostic mode is explicitly excluded from product publishing.
   if (url.pathname === "/admin/github-dispatch-check" && request.method === "POST") {
     const token = env.ACC_CONTENTS_TOKEN;
     if (!token) return json({ configured: false, error: "ACC_CONTENTS_TOKEN is missing" }, 503);
-    const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/dispatches", {
+    const response = await fetch("https://api.github.com/repos/Allacontactical/acc-store/actions/workflows/publish-acc-product.yml/dispatches", {
       method: "POST",
-      headers: {
-        "Accept": "application/vnd.github+json",
-        "Authorization": "Bearer " + token,
-        "User-Agent": "AllaconTactical-ACC-Catalog-Publisher",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ event_type: "acc-permission-probe", client_payload: { diagnostic: true, source: "acc-admin" } })
+      headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token, "User-Agent": "AllaconTactical-ACC-Catalog-Publisher", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: "main", inputs: { diagnostic: "true", item_id: "", product_json: "{}" } })
     });
     const responseText = await response.text().catch(() => "");
     let detail = {};
     try { detail = responseText ? JSON.parse(responseText) : {}; } catch {}
-    return json({
-      configured: true,
-      github_status: response.status,
-      accepted_permissions: response.headers.get("x-accepted-github-permissions"),
-      request_id: response.headers.get("x-github-request-id"),
-      message: response.ok ? "Тестовое событие принято GitHub; публикация товара не запускалась." : String(detail.message || responseText || "empty response").replace(/\\s+/g, " ").slice(0, 400),
-      event_type: "acc-permission-probe",
-      product_workflow_triggered: false
-    }, response.ok ? 200 : 502);
+    return json({ configured: true, github_status: response.status, accepted_permissions: response.headers.get("x-accepted-github-permissions"), request_id: response.headers.get("x-github-request-id"), message: response.status === 204 ? "GitHub принял безопасный запуск диагностического режима; товар не публиковался." : String(detail.message || responseText || "empty response").replace(/\s+/g, " ").slice(0, 400), event_type: "workflow_dispatch diagnostic", product_workflow_triggered: false }, response.status === 204 ? 200 : 502);
   }
 
   // Read-only diagnostics for the exact GitHub token used by catalog publishing.
