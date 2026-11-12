@@ -71,7 +71,7 @@ jobs:
         env:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
-          MAX_PRODUCTS: ${{ inputs.max_products || '1' }}
+          MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
           WRITE_CATALOG: ${{ github.event_name == 'push' || inputs.write_catalog }}
         run: |
           node <<'NODE'
@@ -160,8 +160,13 @@ jobs:
               execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
               execFileSync("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
               execFileSync("git", ["add", "products.json"]);
-              execFileSync("git", ["commit", "-m", "Update published ACC products with optimized R2 photos"]);
-              execFileSync("git", ["push", "origin", "HEAD:main"]);
+              try {
+                execFileSync("git", ["diff", "--cached", "--quiet"]);
+                console.log("Published product photos already match the R2 catalog; no catalog commit is needed.");
+              } catch {
+                execFileSync("git", ["commit", "-m", "Update published ACC products with optimized R2 photos"]);
+                execFileSync("git", ["push", "origin", "HEAD:main"]);
+              }
             }
             console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: updates.length, catalog_written: process.env.WRITE_CATALOG === "true" }));
           })().catch(error => { console.error(error); process.exit(1); });
