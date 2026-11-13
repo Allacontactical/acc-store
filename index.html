@@ -1016,7 +1016,7 @@
       }
       function descriptionPlain(source) {
         var box = document.createElement("div"); box.appendChild(descriptionFragment(source));
-        return (box.textContent || "").replace(/[\\t\\r\\n ]+/g, " ").trim();
+        return (box.textContent || "").replace(/[\t\r\n ]+/g, " ").trim();
       }
 
       function formatPrice(product) {
