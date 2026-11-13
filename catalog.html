@@ -168,8 +168,6 @@ if(allowed[tag]){var clean=document.createElement(tag.toLowerCase());copyChildre
 copyChildren(node,to);
 });}
 var result=document.createDocumentFragment();copyChildren(parsed.body,result);return result;
-});}
-var result=document.createDocumentFragment();copyChildren(parsed.body,result);return result;
 }
 function descriptionText(source){var box=document.createElement("div");box.appendChild(descriptionFragment(source));return(box.textContent||"").replace(/[\t\r\n ]+/g," ").trim();}
 function appendFullDescription(parent,source){parent.appendChild(descriptionFragment(source));}
