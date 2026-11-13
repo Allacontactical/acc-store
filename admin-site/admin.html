@@ -140,7 +140,7 @@ $("manualForm").onsubmit=async e=>{
   let images=[];
   if(files.length){
    msg("manualMsg","Подготавливаю и оптимизирую фотографии…");
-   const form=new FormData();for(const file of files)form.append("files",await convertToWebP(file));
+   const form=new FormData();form.append("product_title",$("manualTitle").value);for(const file of files)form.append("files",await convertToWebP(file));
    msg("manualMsg","Загружаю фотографии в защищённое хранилище…");
    const result=await api("/admin/images",{method:"POST",body:form});images=result.images||[];uploaded=images;
   }
