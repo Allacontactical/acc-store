@@ -746,6 +746,7 @@ export default {
             throw new Error("Only HTTPS images.prom.ua sources are allowed");
           }
           const response = await fetch(parsed.toString(), {
+            headers: { "Accept": "image/webp" },
             cf: { image: { format: "webp", quality: 86, width: 2200, fit: "scale-down" } },
             signal: AbortSignal.timeout(25000)
           });
