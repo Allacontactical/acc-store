@@ -1048,7 +1048,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
 
         var rawDescription = productDescription(product);
         var plainBox = document.createElement("div"); plainBox.appendChild(descriptionFragment(rawDescription));
-        var descriptionText = (plainBox.textContent || "").replace(/[\\t\\r\\n ]+/g, " ").trim();
+        var descriptionText = (plainBox.textContent || "").replace(/[\t\r\n ]+/g, " ").trim();
         if (descriptionText) {
           var description = document.createElement("p");
           description.className = "product-description";
