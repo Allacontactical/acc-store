@@ -114,5 +114,5 @@ test("maps reused source photos to distinct product-specific filenames and resul
   assert.match(workerBlock, /return \{ index, source, error:/);
   assert.match(workflow, /const cacheKey = entry\.item\.id \+ ":" \+ imageIndex \+ ":" \+ source/);
   assert.match(workflow, /cache\.set\(task\.cacheKey, image\.url\)/);
-  assert.match(workflow, /images\.map\(\(source, imageIndex\) => source\.includes\("\/product-images\/"\) \? source : cache\.get\(item\.id \+ ":" \+ imageIndex \+ ":" \+ source\)\)/);
+  assert.match(workflow, /images\.map\(\(source, imageIndex\) => cache\.get\(item\.id \+ ":" \+ imageIndex \+ ":" \+ source\)\)/);\n  assert.match(workflow, /isExistingR2/);\n  assert.match(workerBlock, /env\.PRODUCT_IMAGES\.get\(oldKey\)/);\n  assert.match(workerBlock, /Only trusted Prom or existing ACC R2 image URLs are allowed/);
 });
