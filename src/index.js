@@ -32,6 +32,24 @@ function randomToken(bytes = 32) {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
   return Array.from(data, b => b.toString(16).padStart(2, "0")).join("");
 }
+// Accept both legacy opaque keys (24 hex chars) and new SEO slugs (brand-model-N).
+// Keeping both in one pattern preserves old R2 links while allowing descriptive names.
+const IMAGE_KEY_RE = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?\.webp$/;
+function isImageKey(key) {
+  return typeof key === "string" && IMAGE_KEY_RE.test(key);
+}
+function slugifyImageKey(name) {
+  const base = String(name || "").toLowerCase().replace(/\.webp$/, "");
+  const slug = base.normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 80).replace(/-+$/, "");
+  return slug ? slug + ".webp" : "";
+}
+function isProductImageUrl(value, request) {
+  let parsed;
+  try { parsed = new URL(value); } catch { return false; }
+  return parsed.origin === new URL(request.url).origin &&
+    parsed.pathname.startsWith("/product-images/") &&
+    isImageKey(parsed.pathname.slice("/product-images/".length));
+}
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
@@ -416,7 +434,11 @@ async function handleAdmin(request, env, url) {
     const keys = [];
     try {
       for (const file of files) {
-        const key = randomToken(12) + ".webp";
+        // Honor a provided descriptive name when it is a valid slug; otherwise fall back to an opaque key.
+        const requested = slugifyImageKey(form.get("name_" + file.name) || "");
+        let key = requested;
+        if (!key) key = randomToken(12) + ".webp";
+        else if (await env.PRODUCT_IMAGES.head(key)) key = randomToken(12) + ".webp";
         await env.PRODUCT_IMAGES.put(key, file.stream(), {
           httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
         });
@@ -433,7 +455,7 @@ async function handleAdmin(request, env, url) {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const keys = Array.isArray(payload?.keys) ? payload.keys : [];
-    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
+    if (!keys.length || keys.length > 10 || keys.some(key => !isImageKey(key))) return json({ error: "Invalid image keys" }, 400);
     await env.PRODUCT_IMAGES.delete(keys);
     return json({ ok: true });
   }
@@ -450,7 +472,7 @@ async function handleAdmin(request, env, url) {
     const availability = String(payload?.availability || "Під замовлення").trim().slice(0, 40);
     const images = payload?.images;
     if (!title || !price) return json({ error: "Укажите название и цену товара" }, 400);
-    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\/product-images\/[a-f0-9]{24}\.webp$/.test(x))) {
+    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !isProductImageUrl(x, request))) {
       return json({ error: "Некорректный список фотографий" }, 400);
     }
     const batchId = randomToken(12);
@@ -656,7 +678,7 @@ export default {
     }
     if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      if (!isImageKey(key)) return new Response("Not found", { status: 404 });
       const object = request.method === "HEAD"
         ? await env.PRODUCT_IMAGES.head(key)
         : await env.PRODUCT_IMAGES.get(key);
@@ -706,7 +728,7 @@ export default {
           if (typeof image !== "string" || image.length > 2000) return json({ error: "Invalid image URL" }, 400);
           let parsed;
           try { parsed = new URL(image); } catch { return json({ error: "Invalid image URL" }, 400); }
-          const ownImage = parsed.origin === url.origin && /^\/product-images\/[a-f0-9]{24}\.webp$/.test(parsed.pathname);
+          const ownImage = isProductImageUrl(image, request);
           const sourceImage = parsed.protocol === "https:" && parsed.hostname === "images.prom.ua";
           if (!ownImage && !sourceImage) return json({ error: "Image URL is outside the allowed sources" }, 400);
         }
@@ -734,16 +756,49 @@ export default {
       if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
       let payload;
       try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
-      const sources = payload?.sources;
-      if (!Array.isArray(sources) || sources.length < 1 || sources.length > 10 ||
-          sources.some(source => typeof source !== "string" || source.length > 2000)) {
-        return json({ error: "Expected 1–10 image source URLs" }, 400);
+      // Accept either { sources: [url] } or { items: [{ source, name }] }. A provided
+      // name becomes the R2 key (brand-model-N.webp); an existing object is reused so a
+      // repeated run does not create duplicate copies.
+      const items = Array.isArray(payload?.items)
+        ? payload.items
+        : (Array.isArray(payload?.sources) ? payload.sources.map(source => ({ source })) : []);
+      if (items.length < 1 || items.length > 10 ||
+          items.some(item => !item || typeof item.source !== "string" || item.source.length > 2000 ||
+            (item.name !== undefined && typeof item.name !== "string"))) {
+        return json({ error: "Expected 1–10 image sources" }, 400);
       }
-      const outcomes = await Promise.all(sources.map(async source => {
+      const outcomes = await Promise.all(items.map(async ({ source, name }) => {
         try {
           const parsed = new URL(source);
-          if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
+          const ownSource = isProductImageUrl(source, request);
+          if (!ownSource && (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua")) {
             throw new Error("Only HTTPS images.prom.ua sources are allowed");
+          }
+          const named = name ? slugifyImageKey(name) : "";
+          if (name && !named) throw new Error("Invalid image name: " + String(name).slice(0, 80));
+          if (named) {
+            const existing = await env.PRODUCT_IMAGES.head(named);
+            if (existing) {
+              const isSameNamedObject = ownSource && parsed.pathname === "/product-images/" + named;
+              if (existing.customMetadata?.sourceUrl !== source && !isSameNamedObject) {
+                throw new Error("Named image key already belongs to a different or unverified source: " + named);
+              }
+              return { source, url: new URL("/product-images/" + named, request.url).toString(), key: named, reused: true };
+            }
+          }
+          // A photo already stored in R2 is copied to its new key (server-side),
+          // without deleting the original object, so old links keep working.
+          if (ownSource) {
+            const oldKey = parsed.pathname.slice("/product-images/".length);
+            const object = await env.PRODUCT_IMAGES.get(oldKey);
+            if (!object) throw new Error("Source image not found in R2: " + oldKey);
+            const bytes = await object.arrayBuffer();
+            const key = named || oldKey;
+            await env.PRODUCT_IMAGES.put(key, bytes, {
+              httpMetadata: object.httpMetadata || { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" },
+              customMetadata: { sourceUrl: source }
+            });
+            return { source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength, reused: false };
           }
           const response = await fetch(parsed.toString(), {
             headers: { "Accept": "image/webp" },
@@ -758,11 +813,12 @@ export default {
           const view = new Uint8Array(bytes);
           if (view.length < 12 || String.fromCharCode(...view.slice(0, 4)) !== "RIFF" ||
               String.fromCharCode(...view.slice(8, 12)) !== "WEBP") throw new Error("Converted file is not a valid WebP image");
-          const key = randomToken(12) + ".webp";
+          const key = named || (randomToken(12) + ".webp");
           await env.PRODUCT_IMAGES.put(key, bytes, {
-            httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
+            httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" },
+            customMetadata: { sourceUrl: source }
           });
-          return { source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength };
+          return { source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength, reused: false };
         } catch (error) {
           return { source, error: String(error.message || error).slice(0, 220) };
         }

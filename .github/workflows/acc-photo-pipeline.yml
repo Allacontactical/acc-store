@@ -2,10 +2,6 @@
 name: ACC photo pipeline
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/acc-photo-pipeline.yml"
   workflow_dispatch:
     inputs:
       max_products:
@@ -15,6 +11,11 @@ on:
         type: string
       write_catalog:
         description: "Update published product cards after successful R2 upload"
+        required: true
+        default: false
+        type: boolean
+      save_d1:
+        description: "Explicitly save processed photo URLs to the staging D1 import batch"
         required: true
         default: false
         type: boolean
@@ -73,7 +74,8 @@ jobs:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
           MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
-          WRITE_CATALOG: ${{ github.event_name == 'push' || inputs.write_catalog }}
+          WRITE_CATALOG: ${{ inputs.write_catalog || 'false' }}
+          SAVE_D1: ${{ inputs.save_d1 || 'false' }}
         run: |
           node <<'NODE'
           (async () => {
@@ -103,7 +105,6 @@ jobs:
               for (const source of images) {
                 if (typeof source !== "string") throw new Error("Non-string image URL in item " + item.id);
                 if (source.includes("/product-images/")) {
-                  cache.set(source, source);
                   alreadyLocal++;
                 } else {
                   const parsed = new URL(source);
@@ -124,16 +125,39 @@ jobs:
               await Promise.all(existingUrls.slice(i, i + 40).map(verifyR2));
             }
 
-            const uniqueSources = [...new Set(parsedItems.flatMap(x => x.images).filter(x => !x.includes("/product-images/")))];
+            // Deterministic, idempotent names: <brand>-<model>-<n>.webp. Shared by the
+            // Worker (R2 key) and the test suite via scripts/photo-names.mjs.
+            const { brandModelSlug } = await import(new URL("scripts/photo-names.mjs", "file://" + process.cwd() + "/").href);
+            const slugItems = new Map();
+            for (const { item } of parsedItems) {
+              const slug = brandModelSlug(item.title) || ("product-" + (item.public_product_id || item.product_id || item.id));
+              if (!slugItems.has(slug)) slugItems.set(slug, new Set());
+              slugItems.get(slug).add(String(item.public_product_id || item.product_id || item.id));
+            }
+            const nameBySource = new Map();
+            const sharedNames = [];
+            for (const { item, images } of parsedItems) {
+              const base = brandModelSlug(item.title) || ("product-" + (item.public_product_id || item.product_id || item.id));
+              const id = String(item.public_product_id || item.product_id || item.id);
+              const slug = slugItems.get(base).size > 1 ? `${base}-${id}` : base;
+              images.forEach((source, i) => {
+                const name = `${slug}-${i + 1}.webp`;
+                if (!nameBySource.has(source)) nameBySource.set(source, name);
+                else if (nameBySource.get(source) !== name) sharedNames.push({ source, first: nameBySource.get(source), also: name });
+              });
+            }
+            if (sharedNames.length) console.log(JSON.stringify({ warning: "source image shared by several products", shared: sharedNames.slice(0, 20), count: sharedNames.length }));
+
+            const uniqueSources = [...new Set(parsedItems.flatMap(x => x.images))];
             const chunks = [];
-            for (let i = 0; i < uniqueSources.length; i += 10) chunks.push(uniqueSources.slice(i, i + 10));
+            for (let i = 0; i < uniqueSources.length; i += 10) chunks.push(uniqueSources.slice(i, i + 10).map(source => ({ source, name: nameBySource.get(source) })));
 
             async function processChunk(chunk, index) {
               let lastError = null;
               for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
                   const r = await fetch(base, {
-                    method: "POST", headers, body: JSON.stringify({ sources: chunk }),
+                    method: "POST", headers, body: JSON.stringify({ items: chunk }),
                     signal: AbortSignal.timeout(60000)
                   });
                   const result = await r.json();
@@ -141,7 +165,7 @@ jobs:
                   const successes = result.images || [];
                   const failed = result.failures || [];
                   const returned = new Set([...successes.map(x => x.source), ...failed.map(x => x.source)]);
-                  if (chunk.some(source => !returned.has(source))) throw new Error("Worker omitted one or more source images from its response");
+                  if (chunk.some(entry => !returned.has(entry.source))) throw new Error("Worker omitted one or more source images from its response");
                   await Promise.all(successes.map(async image => {
                     await verifyR2(image.url);
                     cache.set(image.source, image.url);
@@ -183,12 +207,13 @@ jobs:
                 catalogUpdated++;
               }
             }
-            if (updates.length) {
+            if (process.env.SAVE_D1 === "true" && updates.length) {
               const saved = await fetch(base + "/save", { method: "POST", headers, body: JSON.stringify({ batch_id: process.env.BATCH_ID, updates }) });
               const result = await saved.json();
               if (!saved.ok || !result.ok || result.updated !== updates.length) throw new Error("Could not save all image links to D1: " + JSON.stringify(result));
             }
 
+            if (process.env.WRITE_CATALOG === "true" && process.env.SAVE_D1 !== "true") throw new Error("Catalog write requires explicit D1 save approval");
             if (process.env.WRITE_CATALOG === "true" && catalogUpdated) {
               fs.writeFileSync("products.json", JSON.stringify(products, null, 2) + "\n");
               execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
@@ -202,6 +227,6 @@ jobs:
                 execFileSync("git", ["push", "origin", "HEAD:main"]);
               }
             }
-            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, failed_images: failures.length, failure_examples: failures.slice(0, 20), items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: updates.length, catalog_written: process.env.WRITE_CATALOG === "true" }));
+            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, failed_images: failures.length, failure_examples: failures.slice(0, 20), items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: process.env.SAVE_D1 === "true" ? updates.length : 0, catalog_written: process.env.WRITE_CATALOG === "true" }));
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
