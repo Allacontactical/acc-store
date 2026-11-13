@@ -48,7 +48,7 @@ test("four former sale items have permanent destination categories", () => {
     "3024507052": "Тактичний одяг",
     "3024524537": "Тактичне спорядження та аксесуари",
     "3024609676": "Аксесуари для полювання",
-    "3024616283": "Тактичне спорядження та аксесуары"
+    "3024616283": "Тактичне спорядження та аксесуари"
   };
   for (const [id, category] of Object.entries(expected)) {
     const product = products.find(item => item.id === id);
