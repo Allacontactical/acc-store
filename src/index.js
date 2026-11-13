@@ -749,6 +749,46 @@ export default {
       return json({ ok: true, batch_id: batchId, updated });
     }
 
+    // Authenticated fallback upload: GitHub Actions converts stubborn JPEG sources to
+    // real WebP bytes using sharp. Keep this separate from the public admin upload.
+    if (url.pathname === "/internal/photo-pipeline/upload-webp" && request.method === "POST") {
+      const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");
+      if (!env.ACC_CONTENTS_TOKEN || supplied !== env.ACC_CONTENTS_TOKEN) return json({ error: "Forbidden" }, 403);
+      if (!env.PRODUCT_IMAGES) return json({ error: "Image storage binding is not configured" }, 503);
+      let payload;
+      try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const source = payload?.source;
+      const name = payload?.name;
+      if (typeof source !== "string" || source.length > 2000 ||
+          typeof name !== "string" || !name.endsWith(".webp") ||
+          typeof payload?.webp_base64 !== "string" || payload.webp_base64.length > 11_200_000) {
+        return json({ error: "Invalid WebP upload payload" }, 400);
+      }
+      let parsed;
+      try { parsed = new URL(source); } catch { return json({ error: "Invalid source URL" }, 400); }
+      if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") return json({ error: "Invalid source host" }, 400);
+      const key = slugifyImageKey(name);
+      if (!key || key !== name) return json({ error: "Invalid image key" }, 400);
+      const binary = atob(payload.webp_base64);
+      const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+      if (!bytes.length || bytes.length > 8 * 1024 * 1024 ||
+          bytes.length < 12 ||
+          String.fromCharCode(...bytes.slice(0, 4)) !== "RIFF" ||
+          String.fromCharCode(...bytes.slice(8, 12)) !== "WEBP") {
+        return json({ error: "Not valid WebP bytes" }, 400);
+      }
+      const existing = await env.PRODUCT_IMAGES.head(key);
+      if (existing) {
+        if (existing.customMetadata?.sourceUrl !== source) return json({ error: "Image key collision" }, 409);
+      } else {
+        await env.PRODUCT_IMAGES.put(key, bytes, {
+          httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" },
+          customMetadata: { sourceUrl: source }
+        });
+      }
+      return json({ ok: true, source, url: new URL("/product-images/" + key, request.url).toString(), reused: !!existing }, 201);
+    }
+
     // Internal photo pipeline: fetch trusted Prom images, convert to WebP at the edge, and store in R2.
     if (url.pathname === "/internal/photo-pipeline" && request.method === "POST") {
       const supplied = (request.headers.get("Authorization") || "").replace(/^Bearer /, "");

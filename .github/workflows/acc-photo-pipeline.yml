@@ -69,6 +69,9 @@ jobs:
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
 
+      - name: Install local JPEG to WebP fallback converter
+        run: npm install --no-save --no-package-lock sharp@0.34.5
+
       - name: Convert all selected photos to WebP and verify R2
         env:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
@@ -80,6 +83,7 @@ jobs:
           node <<'NODE'
           (async () => {
             const fs = require("node:fs");
+            const sharp = require("sharp");
             const { execFileSync } = require("node:child_process");
             const base = "https://allacontactical-bot.allacontactical.workers.dev/internal/photo-pipeline";
             const headers = { "Authorization": "Bearer " + process.env.ACC_CONTENTS_TOKEN, "Content-Type": "application/json" };
@@ -152,6 +156,26 @@ jobs:
             const chunks = [];
             for (let i = 0; i < uniqueSources.length; i += 10) chunks.push(uniqueSources.slice(i, i + 10).map(source => ({ source, name: nameBySource.get(source) })));
 
+            async function convertFallback(entry) {
+              const parsed = new URL(entry.source);
+              if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") throw new Error("Invalid fallback source");
+              const sourceResponse = await fetch(entry.source, { signal: AbortSignal.timeout(25000) });
+              if (!sourceResponse.ok) throw new Error("Fallback source HTTP " + sourceResponse.status);
+              const original = Buffer.from(await sourceResponse.arrayBuffer());
+              if (!original.length || original.length > 16 * 1024 * 1024) throw new Error("Fallback source exceeds size limit");
+              const converted = await sharp(original, { limitInputPixels: 45_000_000 }).resize({ width: 2200, withoutEnlargement: true }).webp({ quality: 86 }).toBuffer();
+              if (converted.length > 8 * 1024 * 1024) throw new Error("Fallback WebP exceeds 8MB");
+              const upload = await fetch(base + "/upload-webp", {
+                method: "POST", headers,
+                body: JSON.stringify({ source: entry.source, name: entry.name, webp_base64: converted.toString("base64") }),
+                signal: AbortSignal.timeout(60000)
+              });
+              const result = await upload.json();
+              if (!upload.ok || !result.ok) throw new Error("Fallback upload failed: " + JSON.stringify(result));
+              await verifyR2(result.url);
+              return result.url;
+            }
+
             async function processChunk(chunk, index) {
               let lastError = null;
               for (let attempt = 1; attempt <= 3; attempt++) {
@@ -172,8 +196,15 @@ jobs:
                     converted++;
                   }));
                   for (const image of failed) {
-                    cache.set(image.source, image.source);
-                    failures.push({ source: image.source, error: image.error });
+                    const entry = chunk.find(item => item.source === image.source);
+                    try {
+                      const url = await convertFallback(entry);
+                      cache.set(image.source, url);
+                      converted++;
+                    } catch (fallbackError) {
+                      cache.set(image.source, image.source);
+                      failures.push({ source: image.source, error: image.error + "; fallback: " + String(fallbackError.message || fallbackError).slice(0, 160) });
+                    }
                   }
                   console.log(JSON.stringify({ photo_chunk: index + 1, total_chunks: chunks.length, sources: chunk.length, converted: successes.length, failed: failed.length, attempt }));
                   return;
