@@ -161,19 +161,34 @@ $("manualForm").onsubmit=async e=>{
 function showWorkspace(){ $("login").classList.add("hidden");$("workspace").classList.remove("hidden");$("logout").classList.remove("hidden");loadBatches();}
 function showLogin(){ $("login").classList.remove("hidden");$("workspace").classList.add("hidden");$("logout").classList.add("hidden");}
 async function verify(){if(!token)return showLogin();try{await api("/admin/me");showWorkspace();}catch(_){token="";sessionStorage.removeItem("acc_admin_session");showLogin();}}
+let loginPoll=null;
+function savedChallenge(){return localStorage.getItem("acc_admin_challenge")||sessionStorage.getItem("acc_admin_challenge")||"";}
+function beginLoginPolling(){
+ if(loginPoll)clearInterval(loginPoll);
+ loginPoll=setInterval(()=>{if(savedChallenge())checkLogin();else{clearInterval(loginPoll);loginPoll=null;}},2500);
+}
 async function checkLogin(){
- const challenge=sessionStorage.getItem("acc_admin_challenge");
+ const challenge=savedChallenge();
  if(!challenge){msg("loginMsg","Сначала нажмите «Войти через Telegram».");return;}
  try{
-  msg("loginMsg","Проверяю подтверждение в Telegram…");
   const s=await fetch(API+"/auth/status",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:challenge}),cache:"no-store"});
   const v=await s.json();
-  if(!s.ok)throw new Error(v.error||("HTTP "+s.status));
+  if(!s.ok && s.status!==404)throw new Error(v.error||("HTTP "+s.status));
   if(v.status==="authenticated"){
-   sessionStorage.removeItem("acc_admin_challenge");
-   token=v.session_token;sessionStorage.setItem("acc_admin_session",token);await verify();
-  }else msg("loginMsg","Статус входа: "+v.status+". После нажатия Start подождите немного и проверьте снова.");
- }catch(e){msg("loginMsg","Не удалось проверить вход: "+e.message);}
+   localStorage.removeItem("acc_admin_challenge");sessionStorage.removeItem("acc_admin_challenge");
+   if(loginPoll){clearInterval(loginPoll);loginPoll=null;}
+   token=v.session_token;sessionStorage.setItem("acc_admin_session",token);
+   msg("loginMsg","Вход подтверждён. Открываю административную панель…");
+   await verify();
+   if(!$("workspace").classList.contains("hidden"))msg("loginMsg","Доступ администратора подтверждён.");
+   else msg("loginMsg","Telegram подтвердил вход, но этот аккаунт не распознан как администратор. Доступ закрыт.");
+  }else if(v.status==="expired"||v.status==="not_found"||v.status==="consumed"){
+   localStorage.removeItem("acc_admin_challenge");sessionStorage.removeItem("acc_admin_challenge");
+   if(loginPoll){clearInterval(loginPoll);loginPoll=null;}
+   $("loginBtn").textContent="Войти через Telegram";$("loginBtn").onclick=startLogin;
+   msg("loginMsg","Запрос входа истёк. Нажмите кнопку, чтобы создать новый.");
+  }else msg("loginMsg","Ожидаю подтверждение в Telegram…");
+ }catch(e){msg("loginMsg","Проверка входа: "+e.message);}
 }
 async function startLogin(){
  let popup=null;
@@ -183,18 +198,21 @@ async function startLogin(){
   const r=await fetch(API+"/auth/start",{method:"POST",cache:"no-store"});
   const d=await r.json();
   if(!r.ok)throw new Error(d.error||"Не удалось начать вход");
-  sessionStorage.setItem("acc_admin_challenge",d.token);
-  $("loginBtn").textContent="Проверить вход";
+  localStorage.setItem("acc_admin_challenge",d.token);
+  sessionStorage.removeItem("acc_admin_challenge");
+  $("loginBtn").textContent="Ожидаю подтверждение…";
   $("loginBtn").onclick=checkLogin;
-  if(popup){popup.location=d.telegram_url;msg("loginMsg","Откройте Telegram, нажмите Start, затем вернитесь сюда и нажмите «Проверить вход». Запрос сохранится даже после обновления страницы.");}
+  beginLoginPolling();
+  if(popup){popup.location=d.telegram_url;msg("loginMsg","Перейдите в Telegram и нажмите Start. Я автоматически проверю подтверждение — возвращаться и нажимать кнопку не потребуется.");}
   else{
-   msg("loginMsg","Браузер заблокировал новое окно. Откройте Telegram по ссылке ниже, нажмите Start, затем вернитесь сюда и нажмите «Проверить вход».");
+   msg("loginMsg","Откройте Telegram по ссылке ниже и нажмите Start. Подтверждение проверится автоматически.");
    const a=document.createElement("a");a.href=d.telegram_url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Открыть Telegram-бота AllaconTactical";a.style.display="block";a.style.marginTop="10px";$("loginMsg").append(a);
   }
  }catch(e){if(popup)popup.close();msg("loginMsg","Ошибка: "+e.message);}
 }
 $("loginBtn").onclick=startLogin;
-if(sessionStorage.getItem("acc_admin_challenge")){$("loginBtn").textContent="Проверить вход";$("loginBtn").onclick=checkLogin;}
+if(sessionStorage.getItem("acc_admin_challenge")&&!localStorage.getItem("acc_admin_challenge"))localStorage.setItem("acc_admin_challenge",sessionStorage.getItem("acc_admin_challenge"));
+if(savedChallenge()){$("loginBtn").textContent="Ожидаю подтверждение…";$("loginBtn").onclick=checkLogin;beginLoginPolling();msg("loginMsg","Восстановил запрос входа. Ожидаю подтверждение в Telegram…");}
 $("logout").onclick=async()=>{try{await api("/auth/logout",{method:"POST"});}catch(_){}token="";sessionStorage.removeItem("acc_admin_session");showLogin();};
 $("csvFile").onchange=()=>{$("uploadBtn").disabled=!$("csvFile").files.length;msg("uploadMsg","");};
 $("uploadBtn").onclick=async()=>{const file=$("csvFile").files[0];if(!file)return;$("uploadBtn").disabled=true;msg("uploadMsg","Читаю Excel…");try{if(!window.XLSX)throw new Error("Не загрузилась библиотека чтения XLSX. Обновите страницу и повторите.");const bytes=await file.arrayBuffer();const workbook=XLSX.read(bytes,{type:"array",cellDates:false});const sheetName=workbook.SheetNames.find(n=>n==="Export Products Sheet")||workbook.SheetNames[0];if(!sheetName)throw new Error("В Excel-файле не найден лист с товарами.");const sheet=workbook.Sheets[sheetName];const rows=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:false,blankrows:false});const nonempty=rows.filter(x=>Object.values(x).some(v=>String(v??"").trim()));if(!nonempty.length)throw new Error("На листе нет строк товаров.");if(nonempty.length>400)throw new Error("В файле больше 400 строк. Разделите экспорт на части.");const required=["Назва_позиції","Назва_позиції_укр","Ціна","Наявність","Посилання_зображення"];const headers=Object.keys(nonempty[0]);const missing=required.filter(k=>!headers.includes(k));if(missing.length)throw new Error("Не найдены обязательные столбцы Prom: "+missing.join(", "));msg("uploadMsg","Проверка пройдена: "+nonempty.length+" товаров. Передаю в закрытую очередь…");const data=await api("/admin/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_name:file.name,rows:nonempty})});msg("uploadMsg","Готово: "+data.imported_items+" товаров добавлено в очередь. Публикация не выполнялась.");$("csvFile").value="";await loadBatches();await loadItems(data.batch_id);}catch(e){msg("uploadMsg","Ошибка: "+e.message);}finally{$("uploadBtn").disabled=false;}};
