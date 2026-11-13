@@ -1012,7 +1012,8 @@
         imageWrap.className = "product-image";
         var img = document.createElement("img");
         img.src = product.image || "";
-        img.alt = product.title || "Товар AllaconTactical";
+        img.alt = (product.title || "Товар AllaconTactical") + " — фото 1";
+        img.title = img.alt;
         img.loading = "lazy";
         img.onerror = function () { imageWrap.style.display = "none"; };
         imageWrap.appendChild(img);
