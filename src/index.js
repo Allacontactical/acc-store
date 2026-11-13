@@ -32,6 +32,17 @@ function randomToken(bytes = 32) {
   const data = crypto.getRandomValues(new Uint8Array(bytes));
   return Array.from(data, b => b.toString(16).padStart(2, "0")).join("");
 }
+function imageSlug(value) {
+  const transliteration = {а:"a",б:"b",в:"v",г:"h",ґ:"g",д:"d",е:"e",є:"ye",ж:"zh",з:"z",и:"y",і:"i",ї:"yi",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ь:"",ю:"yu",я:"ya",ы:"y",э:"e",ъ:"",ё:"yo"};
+  return String(value || "allacon-product").toLowerCase()
+    .replace(/[а-яёіїєґ]/g, ch => transliteration[ch] ?? ch)
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    .slice(0, 72).replace(/-+$/g, "") || "allacon-product";
+}
+function isProductImageKey(key) {
+  return typeof key === "string" && (/^[a-f0-9]{24}\.webp$/.test(key) || /^[a-z0-9][a-z0-9-]{1,120}\.webp$/.test(key));
+}
 async function sha256(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
@@ -413,10 +424,13 @@ async function handleAdmin(request, env, url) {
     if (files.some(file => file.type !== "image/webp" || file.size < 1 || file.size > 8 * 1024 * 1024)) {
       return json({ error: "Допускаются только WebP-фото размером до 8 МБ каждое" }, 400);
     }
+    const productTitle = String(form.get("product_title") || "Allacon product").trim().slice(0, 500);
+    const slug = imageSlug(productTitle);
     const keys = [];
     try {
-      for (const file of files) {
-        const key = randomToken(12) + ".webp";
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        const key = slug + "-" + (index + 1) + "-" + randomToken(3) + ".webp";
         await env.PRODUCT_IMAGES.put(key, file.stream(), {
           httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
         });
@@ -433,7 +447,7 @@ async function handleAdmin(request, env, url) {
     let payload;
     try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
     const keys = Array.isArray(payload?.keys) ? payload.keys : [];
-    if (!keys.length || keys.length > 10 || keys.some(key => typeof key !== "string" || !/^[a-f0-9]{24}\.webp$/.test(key))) return json({ error: "Invalid image keys" }, 400);
+    if (!keys.length || keys.length > 10 || keys.some(key => !isProductImageKey(key))) return json({ error: "Invalid image keys" }, 400);
     await env.PRODUCT_IMAGES.delete(keys);
     return json({ ok: true });
   }
@@ -450,7 +464,7 @@ async function handleAdmin(request, env, url) {
     const availability = String(payload?.availability || "Під замовлення").trim().slice(0, 40);
     const images = payload?.images;
     if (!title || !price) return json({ error: "Укажите название и цену товара" }, 400);
-    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !/\/product-images\/[a-f0-9]{24}\.webp$/.test(x))) {
+    if (!Array.isArray(images) || images.length > 10 || images.some(x => typeof x !== "string" || !x.startsWith(new URL("/product-images/", request.url).toString()) || !isProductImageKey(x.split("/").pop()))) {
       return json({ error: "Некорректный список фотографий" }, 400);
     }
     const batchId = randomToken(12);
@@ -656,7 +670,7 @@ export default {
     }
     if ((request.method === "GET" || request.method === "HEAD") && url.pathname.startsWith("/product-images/") && env.PRODUCT_IMAGES) {
       const key = url.pathname.slice("/product-images/".length);
-      if (!/^[a-f0-9]{24}\.webp$/.test(key)) return new Response("Not found", { status: 404 });
+      if (!isProductImageKey(key)) return new Response("Not found", { status: 404 });
       const object = request.method === "HEAD"
         ? await env.PRODUCT_IMAGES.head(key)
         : await env.PRODUCT_IMAGES.get(key);
@@ -706,7 +720,7 @@ export default {
           if (typeof image !== "string" || image.length > 2000) return json({ error: "Invalid image URL" }, 400);
           let parsed;
           try { parsed = new URL(image); } catch { return json({ error: "Invalid image URL" }, 400); }
-          const ownImage = parsed.origin === url.origin && /^\/product-images\/[a-f0-9]{24}\.webp$/.test(parsed.pathname);
+          const ownImage = parsed.origin === url.origin && parsed.pathname.startsWith("/product-images/") && isProductImageKey(parsed.pathname.slice("/product-images/".length));
           const sourceImage = parsed.protocol === "https:" && parsed.hostname === "images.prom.ua";
           if (!ownImage && !sourceImage) return json({ error: "Image URL is outside the allowed sources" }, 400);
         }
@@ -735,11 +749,13 @@ export default {
       let payload;
       try { payload = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
       const sources = payload?.sources;
+      const fileNames = payload?.file_names;
       if (!Array.isArray(sources) || sources.length < 1 || sources.length > 10 ||
-          sources.some(source => typeof source !== "string" || source.length > 2000)) {
-        return json({ error: "Expected 1–10 image source URLs" }, 400);
+          sources.some(source => typeof source !== "string" || source.length > 2000) ||
+          (fileNames !== undefined && (!Array.isArray(fileNames) || fileNames.length !== sources.length || fileNames.some(name => typeof name !== "string" || !/^[a-z0-9][a-z0-9-]{1,120}\.webp$/.test(name))))) {
+        return json({ error: "Expected 1–10 image source URLs and matching safe WebP file names" }, 400);
       }
-      const outcomes = await Promise.all(sources.map(async source => {
+      const outcomes = await Promise.all(sources.map(async (source, index) => {
         try {
           const parsed = new URL(source);
           if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
@@ -758,7 +774,7 @@ export default {
           const view = new Uint8Array(bytes);
           if (view.length < 12 || String.fromCharCode(...view.slice(0, 4)) !== "RIFF" ||
               String.fromCharCode(...view.slice(8, 12)) !== "WEBP") throw new Error("Converted file is not a valid WebP image");
-          const key = randomToken(12) + ".webp";
+          const key = fileNames?.[index] || randomToken(12) + ".webp";
           await env.PRODUCT_IMAGES.put(key, bytes, {
             httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
           });
