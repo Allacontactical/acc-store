@@ -6,6 +6,14 @@ on:
       - main
     paths:
       - "src/**"
+      - "products.json"
+      - "hunting-headwear.html"
+      - "tactical-gear.html"
+      - "hunting-clothing.html"
+      - "hunting-accessories.html"
+      - "hunting-footwear.html"
+      - "fishing-gear.html"
+      - "tests/**"
       - "admin-site/**"
       - "migrations/**"
       - "wrangler.jsonc"
