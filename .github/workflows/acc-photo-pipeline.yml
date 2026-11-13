@@ -78,7 +78,7 @@ jobs:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
           MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
-          WRITE_CATALOG: ${{ github.event_name == 'push' || inputs.write_catalog }}
+          WRITE_CATALOG: ${{ inputs.write_catalog || 'false' }}
           SAVE_D1: ${{ inputs.save_d1 || 'false' }}
         run: |
           node <<'NODE'
@@ -217,6 +217,7 @@ jobs:
               if (!saved.ok || !result.ok || result.updated !== updates.length) throw new Error("Could not save all image links to D1: " + JSON.stringify(result));
             }
 
+            if (process.env.WRITE_CATALOG === "true" && process.env.SAVE_D1 !== "true") throw new Error("Catalog write requires explicit D1 save approval");
             if (process.env.WRITE_CATALOG === "true" && catalogUpdated) {
               fs.writeFileSync("products.json", JSON.stringify(products, null, 2) + "\n");
               execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
