@@ -2,10 +2,6 @@
 name: ACC photo pipeline
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/acc-photo-pipeline.yml"
   workflow_dispatch:
     inputs:
       max_products:
@@ -73,7 +69,7 @@ jobs:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
           MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
-          WRITE_CATALOG: ${{ github.event_name == 'push' || inputs.write_catalog }}
+          WRITE_CATALOG: ${{ inputs.write_catalog }}
         run: |
           node <<'NODE'
           (async () => {
