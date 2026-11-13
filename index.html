@@ -636,7 +636,8 @@
 
     @media(prefers-reduced-motion:reduce){.hero-premium{background-attachment:scroll}}
 
-  .cart-line-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.cart-line-controls button{padding:5px 9px;border:1px solid #69715f;border-radius:4px;background:transparent;color:inherit;cursor:pointer}</style>
+  .cart-line-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.cart-line-controls button{padding:5px 9px;border:1px solid #69715f;border-radius:4px;background:transparent;color:inherit;cursor:pointer}.product-full-description-text table{border-collapse:collapse;width:100%;margin:12px 0}.product-full-description-text th,.product-full-description-text td{border:1px solid rgba(128,128,128,.35);padding:8px;text-align:left}.product-full-description-text hr{border:0;border-top:1px solid rgba(128,128,128,.35);margin:14px 0}
+</style>
   <meta name="google-site-verification" content="kKhYut7UVtmoKe1Et6Yydk7NtmHyHDEHnXAXjsy-di8" />
 
   <link rel="canonical" href="https://allacontactical.com.ua/">
@@ -991,6 +992,22 @@
         return product.description || product.description_ru || "";
       }
 
+      function descriptionFragment(source){
+var normalized=String(source||"").replace(/\\</g,"<").replace(/\\>/g,">");
+var parsed=new DOMParser().parseFromString(normalized,"text/html");
+var allowed={P:1,BR:1,UL:1,OL:1,LI:1,STRONG:1,B:1,EM:1,I:1,H3:1,H4:1,HR:1,TABLE:1,THEAD:1,TBODY:1,TFOOT:1,TR:1,TH:1,TD:1};
+function copyChildren(from,to){Array.from(from.childNodes).forEach(function(node){
+if(node.nodeType===Node.TEXT_NODE){to.appendChild(document.createTextNode(node.nodeValue||""));return;}
+if(node.nodeType!==Node.ELEMENT_NODE)return;
+var tag=node.tagName;
+if(tag==="SCRIPT"||tag==="STYLE"||tag==="IFRAME"||tag==="OBJECT"||tag==="EMBED"||tag==="SVG"||tag==="FORM")return;
+if(tag==="A"){var href=node.getAttribute("href")||"";if(/^https:\/\//i.test(href)){var a=document.createElement("a");a.href=href;a.rel="noopener noreferrer";a.target="_blank";copyChildren(node,a);to.appendChild(a);}else copyChildren(node,to);return;}
+if(allowed[tag]){var clean=document.createElement(tag.toLowerCase());copyChildren(node,clean);to.appendChild(clean);return;}
+copyChildren(node,to);
+});}
+var result=document.createDocumentFragment();copyChildren(parsed.body,result);return result;
+}
+
       function formatPrice(product) {
         var price = Number(product.price);
         if (!isFinite(price)) return "Ціну уточнюйте";
@@ -1029,7 +1046,9 @@
         categoryText.textContent = product.category || "Екіпірування";
         body.appendChild(categoryText);
 
-        var descriptionText = productDescription(product);
+        var rawDescription = productDescription(product);
+        var plainBox = document.createElement("div"); plainBox.appendChild(descriptionFragment(rawDescription));
+        var descriptionText = (plainBox.textContent || "").replace(/[\t\r\n ]+/g, " ").trim();
         if (descriptionText) {
           var description = document.createElement("p");
           description.className = "product-description";
@@ -1043,9 +1062,9 @@
           var fullSummary = document.createElement("summary");
           fullSummary.textContent = "Повний опис";
           fullDescription.appendChild(fullSummary);
-          var fullText = document.createElement("p");
+          var fullText = document.createElement("div");
           fullText.className = "product-full-description-text";
-          fullText.textContent = descriptionText;
+          fullText.appendChild(descriptionFragment(rawDescription));
           fullDescription.appendChild(fullText);
           body.appendChild(fullDescription);
         }
