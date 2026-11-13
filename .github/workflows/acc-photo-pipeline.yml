@@ -2,10 +2,6 @@
 name: ACC photo pipeline
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/acc-photo-pipeline.yml"
   workflow_dispatch:
     inputs:
       max_products:
