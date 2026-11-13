@@ -88,7 +88,7 @@ header{background:#20251d;border-bottom:1px solid #394033}.nav{min-height:72px;d
 
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-tools{grid-template-columns:1fr 1fr}.catalog-tools .search-field{grid-column:1/-1}}
 @media(max-width:520px){.grid{grid-template-columns:1fr}.product-image{height:300px}.catalog-tools{grid-template-columns:1fr}.catalog-tools .search-field{grid-column:auto}.nav{align-items:flex-start}}
-.products .product-full-description-text{white-space:normal;line-height:1.6;color:var(--muted);margin:10px 0 0}.products .product-full-description-text p{margin:0 0 10px}.products .product-full-description-text ul,.products .product-full-description-text ol{margin:8px 0 12px;padding-left:22px}.products .product-full-description-text li{margin:0 0 5px}.products .product-full-description-text a{color:var(--orange);text-decoration:underline}
+.product-full-description-text table{border-collapse:collapse;width:100%;margin:12px 0}.product-full-description-text th,.product-full-description-text td{border:1px solid rgba(128,128,128,.35);padding:8px;text-align:left}.product-full-description-text hr{border:0;border-top:1px solid rgba(128,128,128,.35);margin:14px 0}
 </style>
   <link rel="stylesheet" href="./availability.css">
   <script src="./availability.js" defer></script>
@@ -157,7 +157,7 @@ function desc(p){return lang()==="ru"&&p.description_ru?p.description_ru:(p.desc
 function descriptionFragment(source){
 var normalized=String(source||"").replace(/\\</g,"<").replace(/\\>/g,">");
 var parsed=new DOMParser().parseFromString(normalized,"text/html");
-var allowed={"P":1,"BR":1,"UL":1,"OL":1,"LI":1,"STRONG":1,"B":1,"EM":1,"I":1,"H3":1,"H4":1,"HR":1,"TABLE":1,"THEAD":1,"TBODY":1,"TFOOT":1,"TR":1,"TH":1,"TD":1};
+var allowed={P:1,BR:1,UL:1,OL:1,LI:1,STRONG:1,B:1,EM:1,I:1,H3:1,H4:1,HR:1,TABLE:1,THEAD:1,TBODY:1,TFOOT:1,TR:1,TH:1,TD:1};
 function copyChildren(from,to){Array.from(from.childNodes).forEach(function(node){
 if(node.nodeType===Node.TEXT_NODE){to.appendChild(document.createTextNode(node.nodeValue||""));return;}
 if(node.nodeType!==Node.ELEMENT_NODE)return;
@@ -169,8 +169,6 @@ copyChildren(node,to);
 });}
 var result=document.createDocumentFragment();copyChildren(parsed.body,result);return result;
 }
-function descriptionText(source){var box=document.createElement("div");box.appendChild(descriptionFragment(source));return(box.textContent||"").replace(/[\t\r\n ]+/g," ").trim();}
-function appendFullDescription(parent,source){parent.appendChild(descriptionFragment(source));}
 function displayCategory(name){return name==="Мисливські худі, пуловери, футболкі"?"Мисливські худі, пуловери, футболки":name}
 function price(p){var n=Number(p.price);return Number.isFinite(n)?n:Infinity;}
 function render(){
@@ -190,7 +188,7 @@ var imwrap=document.createElement("div");imwrap.className="product-image";var im
 var body=document.createElement("div");body.className="card-body";
 var h=document.createElement("h2");h.textContent=p.title||"Товар AllaconTactical";body.appendChild(h);
 var c=document.createElement("p");c.className="category";c.textContent=p.category||"Екіпірування";body.appendChild(c);
-var rawDescription=desc(p),d=descriptionText(rawDescription);if(d){var preview=document.createElement("p");preview.className="description";preview.textContent=d.length>240?d.slice(0,237).trim()+"…":d;body.appendChild(preview);if(d.length>240){var details=document.createElement("details");details.className="full-description";var s=document.createElement("summary");s.textContent="Повний опис";details.appendChild(s);var text=document.createElement("div");text.className="product-full-description-text";appendFullDescription(text,rawDescription);details.appendChild(text);body.appendChild(details);}}
+var rawDescription=desc(p),plainBox=document.createElement("div");plainBox.appendChild(descriptionFragment(rawDescription));var d=(plainBox.textContent||"").replace(/[\\t\\r\\n ]+/g," ").trim();if(d){var preview=document.createElement("p");preview.className="description";preview.textContent=d.length>240?d.slice(0,237).trim()+"…":d;body.appendChild(preview);if(d.length>240){var details=document.createElement("details");details.className="full-description";var s=document.createElement("summary");s.textContent="Повний опис";details.appendChild(s);var text=document.createElement("div");text.className="product-full-description-text";text.appendChild(descriptionFragment(rawDescription));details.appendChild(text);body.appendChild(details);}}
 var pr=document.createElement("p");pr.className="price";pr.textContent=Number.isFinite(price(p))?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(price(p))+" грн":"Ціну уточнюйте";body.appendChild(pr);
 var av=document.createElement("p");av.className="availability";av.textContent=p.availability||"Уточнюйте актуальну наявність перед замовленням";body.appendChild(av);
 var add=document.createElement("button");add.type="button";add.className="buy";add.textContent="До кошика";add.setAttribute("data-catalog-cart-id",String(p.id));body.appendChild(add);var buy=document.createElement("button");buy.type="button";buy.className="buy order-button";buy.textContent="Оформити замовлення";buy.setAttribute("data-order-product",p.title||"Товар AllaconTactical");body.appendChild(buy);
