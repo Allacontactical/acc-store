@@ -75,3 +75,28 @@ test("bulk approval is restricted to the exact complete 281-item ACC batch", () 
   assert.equal(isSafe({ ...batch, total_items: 1, imported_items: 1 }, 1), false);
   assert.equal(isSafe({ ...batch, status: "processing" }, 281), false);
 });
+
+
+test("creates readable product image slugs and accepts legacy and descriptive R2 keys", () => {
+  const start = source.indexOf("function imageSlug(value) {");
+  const end = source.indexOf("\nasync function sha256", start);
+  assert.ok(start >= 0 && end > start, "image naming helpers must exist in src/index.js");
+  const sandbox = {};
+  vm.runInNewContext(source.slice(start, end) + "\nglobalThis.imageSlug = imageSlug; globalThis.isProductImageKey = isProductImageKey;", sandbox);
+  assert.equal(sandbox.imageSlug("Куртка Drake Refuge 3.0"), "kurtka-drake-refuge-3-0");
+  assert.equal(sandbox.imageSlug("Штани Chevalier"), "shtany-chevalier");
+  assert.equal(sandbox.isProductImageKey("a".repeat(24) + ".webp"), true);
+  assert.equal(sandbox.isProductImageKey("drake-refuge-3-2452617-1.webp"), true);
+  assert.equal(sandbox.isProductImageKey("../drake-refuge.webp"), false);
+  assert.equal(sandbox.isProductImageKey("Drake Refuge.webp"), false);
+});
+
+test("photo pipeline sends deterministic product-based file names", () => {
+  const workflow = fs.readFileSync(new URL("../.github/workflows/acc-photo-pipeline.yml", import.meta.url), "utf8");
+  const admin = fs.readFileSync(new URL("../admin-site/admin.html", import.meta.url), "utf8");
+  const catalog = fs.readFileSync(new URL("../catalog.html", import.meta.url), "utf8");
+  assert.match(workflow, /file_names: chunk\.map\(source => fileNames\.get\(source\)\)/);
+  assert.match(workflow, /imageSlug\(item\.title\)/);
+  assert.match(admin, /form\.append\("product_title",\$\("manualTitle"\)\.value\)/);
+  assert.match(catalog, /img\.alt=\(p\.title\|\|"Товар AllaconTactical"\)\+" — фото 1"/);
+});
