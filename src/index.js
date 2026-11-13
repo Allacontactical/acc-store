@@ -778,9 +778,9 @@ export default {
           await env.PRODUCT_IMAGES.put(key, bytes, {
             httpMetadata: { contentType: "image/webp", cacheControl: "public, max-age=31536000, immutable" }
           });
-          return { source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength };
+          return { index, source, url: new URL("/product-images/" + key, request.url).toString(), key, bytes: bytes.byteLength };
         } catch (error) {
-          return { source, error: String(error.message || error).slice(0, 220) };
+          return { index, source, error: String(error.message || error).slice(0, 220) };
         }
       }));
       const results = outcomes.filter(item => item.url);
