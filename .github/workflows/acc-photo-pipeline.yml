@@ -99,13 +99,13 @@ jobs:
               if (!images.length) blankItems++;
               for (const source of images) {
                 if (typeof source !== "string") throw new Error("Non-string image URL in item " + item.id);
-                if (source.includes("/product-images/")) {
-                  cache.set(source, source);
-                  alreadyLocal++;
-                } else {
-                  const parsed = new URL(source);
-                  if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") throw new Error("Unexpected image host for item " + item.id + ": " + parsed.hostname);
-                }
+                const parsed = new URL(source);
+                const isProm = parsed.protocol === "https:" && parsed.hostname === "images.prom.ua";
+                const isExistingR2 = parsed.protocol === "https:" &&
+                  ["allacontactical-bot.allacontactical.workers.dev", "allacontactical.com.ua", "www.allacontactical.com.ua"].includes(parsed.hostname) &&
+                  parsed.pathname.startsWith("/product-images/");
+                if (!isProm && !isExistingR2) throw new Error("Unexpected image host for item " + item.id + ": " + parsed.hostname);
+                if (isExistingR2) alreadyLocal++;
               }
               return { item, images };
             });
@@ -114,11 +114,6 @@ jobs:
               const r = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(20000) });
               const type = (r.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
               if (!r.ok || type !== "image/webp") throw new Error("R2 verification failed: HTTP " + r.status + ", " + type);
-            }
-
-            const existingUrls = [...new Set(parsedItems.flatMap(entry => entry.images.filter(source => source.includes("/product-images/"))) )];
-            for (let i = 0; i < existingUrls.length; i += 40) {
-              await Promise.all(existingUrls.slice(i, i + 40).map(verifyR2));
             }
 
             function imageSlug(value) {
@@ -133,7 +128,6 @@ jobs:
             const photoTasks = [];
             for (const entry of parsedItems) {
               entry.cacheKeys = entry.images.map((source, imageIndex) => {
-                if (source.includes("/product-images/")) return source;
                 const cacheKey = entry.item.id + ":" + imageIndex + ":" + source;
                 const idPart = String(entry.item.product_id || entry.item.id).replace(/[^a-z0-9]/gi, "").slice(-8) || String(entry.item.id);
                 const suffix = crypto.createHash("sha1").update(cacheKey).digest("hex").slice(0, 8);
@@ -199,7 +193,7 @@ jobs:
 
             for (const { item, images } of parsedItems) {
               if (!images.length) continue;
-              const next = images.map((source, imageIndex) => source.includes("/product-images/") ? source : cache.get(item.id + ":" + imageIndex + ":" + source));
+              const next = images.map((source, imageIndex) => cache.get(item.id + ":" + imageIndex + ":" + source));
               if (next.some(value => typeof value !== "string")) throw new Error("Missing converted image mapping for import item " + item.id);
               updates.push({ id: item.id, images: next });
               const publicId = item.public_product_id || item.product_id;
