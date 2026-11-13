@@ -95,8 +95,10 @@ test("photo pipeline sends deterministic product-based file names", () => {
   const workflow = fs.readFileSync(new URL("../.github/workflows/acc-photo-pipeline.yml", import.meta.url), "utf8");
   const admin = fs.readFileSync(new URL("../admin-site/admin.html", import.meta.url), "utf8");
   const catalog = fs.readFileSync(new URL("../catalog.html", import.meta.url), "utf8");
+  const homepage = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(workflow, /file_names: chunk\.map\(source => fileNames\.get\(source\)\)/);
   assert.match(workflow, /imageSlug\(item\.title\)/);
   assert.match(admin, /form\.append\("product_title",\$\("manualTitle"\)\.value\)/);
   assert.match(catalog, /img\.alt=\(p\.title\|\|"Товар AllaconTactical"\)\+" — фото 1"/);
+  assert.match(homepage, /img\.alt = \(product\.title \|\| "Товар AllaconTactical"\) \+ " — фото 1"/);
 });
