@@ -167,7 +167,7 @@ var frag=document.createDocumentFragment();
 list.forEach(function(p){
 var card=document.createElement("article");card.className="card";card.setAttribute("data-availability-status",p.availability_status||"");card.setAttribute("data-expected-arrival",p.expected_arrival||"");
 var imlink=document.createElement("a");imlink.href=p.url||"https://allacontactical.prom.ua/";imlink.target="_blank";imlink.rel="noopener";
-var imwrap=document.createElement("div");imwrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=p.title||"Товар AllaconTactical";img.loading="lazy";img.onerror=function(){imwrap.style.display="none";};imwrap.appendChild(img);imlink.appendChild(imwrap);card.appendChild(imlink);
+var imwrap=document.createElement("div");imwrap.className="product-image";var img=document.createElement("img");img.src=p.image||"";img.alt=(p.title||"Товар AllaconTactical")+" — фото 1";img.title=img.alt;img.loading="lazy";img.onerror=function(){imwrap.style.display="none";};imwrap.appendChild(img);imlink.appendChild(imwrap);card.appendChild(imlink);
 var body=document.createElement("div");body.className="card-body";
 var h=document.createElement("h2");h.textContent=p.title||"Товар AllaconTactical";body.appendChild(h);
 var c=document.createElement("p");c.className="category";c.textContent=p.category||"Екіпірування";body.appendChild(c);
