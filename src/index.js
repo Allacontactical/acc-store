@@ -758,19 +758,31 @@ export default {
       const outcomes = await Promise.all(sources.map(async (source, index) => {
         try {
           const parsed = new URL(source);
-          if (parsed.protocol !== "https:" || parsed.hostname !== "images.prom.ua") {
-            throw new Error("Only HTTPS images.prom.ua sources are allowed");
+          let bytes;
+          if (parsed.protocol === "https:" && parsed.hostname === "images.prom.ua") {
+            const response = await fetch(parsed.toString(), {
+              headers: { "Accept": "image/webp" },
+              cf: { image: { format: "webp", quality: 86, width: 2200, fit: "scale-down" } },
+              signal: AbortSignal.timeout(25000)
+            });
+            if (!response.ok) throw new Error("Source image returned HTTP " + response.status);
+            const type = (response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+            if (type !== "image/webp") throw new Error("WebP conversion unavailable; received " + (type || "unknown content type"));
+            bytes = await response.arrayBuffer();
+          } else if (parsed.protocol === "https:" &&
+                     (SITE_ORIGINS.has(parsed.origin) || parsed.hostname === "allacontactical-bot.allacontactical.workers.dev") &&
+                     parsed.pathname.startsWith("/product-images/")) {
+            const oldKey = parsed.pathname.slice("/product-images/".length);
+            if (!isProductImageKey(oldKey)) throw new Error("Invalid existing R2 image key");
+            const existing = await env.PRODUCT_IMAGES.get(oldKey);
+            if (!existing) throw new Error("Existing R2 image was not found");
+            const type = (existing.httpMetadata?.contentType || "").split(";")[0].trim().toLowerCase();
+            if (type !== "image/webp") throw new Error("Existing R2 image is not WebP: " + (type || "unknown content type"));
+            bytes = await existing.arrayBuffer();
+          } else {
+            throw new Error("Only trusted Prom or existing ACC R2 image URLs are allowed");
           }
-          const response = await fetch(parsed.toString(), {
-            headers: { "Accept": "image/webp" },
-            cf: { image: { format: "webp", quality: 86, width: 2200, fit: "scale-down" } },
-            signal: AbortSignal.timeout(25000)
-          });
-          if (!response.ok) throw new Error("Source image returned HTTP " + response.status);
-          const type = (response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
-          if (type !== "image/webp") throw new Error("WebP conversion unavailable; received " + (type || "unknown content type"));
-          const bytes = await response.arrayBuffer();
-          if (!bytes.byteLength || bytes.byteLength > 8 * 1024 * 1024) throw new Error("Converted image size is invalid or exceeds 8 MB");
+          if (!bytes.byteLength || bytes.byteLength > 8 * 1024 * 1024) throw new Error("Image size is invalid or exceeds 8 MB");
           const view = new Uint8Array(bytes);
           if (view.length < 12 || String.fromCharCode(...view.slice(0, 4)) !== "RIFF" ||
               String.fromCharCode(...view.slice(8, 12)) !== "WEBP") throw new Error("Converted file is not a valid WebP image");
