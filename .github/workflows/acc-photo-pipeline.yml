@@ -18,6 +18,11 @@ on:
         required: true
         default: false
         type: boolean
+      save_d1:
+        description: "Explicitly save processed photo URLs to the staging D1 import batch"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -74,6 +79,7 @@ jobs:
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
           MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
           WRITE_CATALOG: ${{ github.event_name == 'push' || inputs.write_catalog }}
+          SAVE_D1: ${{ inputs.save_d1 || 'false' }}
         run: |
           node <<'NODE'
           (async () => {
@@ -205,7 +211,7 @@ jobs:
                 catalogUpdated++;
               }
             }
-            if (updates.length) {
+            if (process.env.SAVE_D1 === "true" && updates.length) {
               const saved = await fetch(base + "/save", { method: "POST", headers, body: JSON.stringify({ batch_id: process.env.BATCH_ID, updates }) });
               const result = await saved.json();
               if (!saved.ok || !result.ok || result.updated !== updates.length) throw new Error("Could not save all image links to D1: " + JSON.stringify(result));
@@ -224,6 +230,6 @@ jobs:
                 execFileSync("git", ["push", "origin", "HEAD:main"]);
               }
             }
-            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, failed_images: failures.length, failure_examples: failures.slice(0, 20), items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: updates.length, catalog_written: process.env.WRITE_CATALOG === "true" }));
+            console.log(JSON.stringify({ batch_items: work.length, processed_items: updates.length, image_references: sourceRefs, converted_images: converted, already_in_r2: alreadyLocal, failed_images: failures.length, failure_examples: failures.slice(0, 20), items_without_images: blankItems, published_cards_updated: catalogUpdated, d1_saved: process.env.SAVE_D1 === "true" ? updates.length : 0, catalog_written: process.env.WRITE_CATALOG === "true" }));
           })().catch(error => { console.error(error); process.exit(1); });
           NODE
