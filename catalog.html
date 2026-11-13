@@ -157,20 +157,20 @@ function desc(p){return lang()==="ru"&&p.description_ru?p.description_ru:(p.desc
 function descriptionFragment(source){
 var parser=new DOMParser(),parsed=parser.parseFromString(String(source||""),"text/html");
 var first=parsed.body.childNodes;
-if(first.length===1&&first[0].nodeType===Node.TEXT_NODE&&/<\\/?[a-z][\\s\\S]*>/i.test(first[0].textContent)){parsed=parser.parseFromString(first[0].textContent,"text/html");}
+if(first.length===1&&first[0].nodeType===Node.TEXT_NODE&&/<\/?[a-z][\s\S]*>/i.test(first[0].textContent)){parsed=parser.parseFromString(first[0].textContent,"text/html");}
 var allowed={P:1,BR:1,UL:1,OL:1,LI:1,STRONG:1,B:1,EM:1,I:1,H3:1,H4:1};
 function copyChildren(from,to){Array.from(from.childNodes).forEach(function(node){
 if(node.nodeType===Node.TEXT_NODE){to.appendChild(document.createTextNode(node.nodeValue||""));return;}
 if(node.nodeType!==Node.ELEMENT_NODE)return;
 var tag=node.tagName;
 if(tag==="SCRIPT"||tag==="STYLE"||tag==="IFRAME"||tag==="OBJECT"||tag==="EMBED"||tag==="SVG"||tag==="FORM")return;
-if(tag==="A"){var href=node.getAttribute("href")||"";if(/^https:\\/\\//i.test(href)){var a=document.createElement("a");a.href=href;a.rel="noopener noreferrer";a.target="_blank";copyChildren(node,a);to.appendChild(a);}else copyChildren(node,to);return;}
+if(tag==="A"){var href=node.getAttribute("href")||"";if(/^https:\/\//i.test(href)){var a=document.createElement("a");a.href=href;a.rel="noopener noreferrer";a.target="_blank";copyChildren(node,a);to.appendChild(a);}else copyChildren(node,to);return;}
 if(allowed[tag]){var clean=document.createElement(tag.toLowerCase());copyChildren(node,clean);to.appendChild(clean);return;}
 copyChildren(node,to);
 });}
 var result=document.createDocumentFragment();copyChildren(parsed.body,result);return result;
 }
-function descriptionText(source){var box=document.createElement("div");box.appendChild(descriptionFragment(source));return(box.textContent||"").replace(/[\\t\\r\\n ]+/g," ").trim();}
+function descriptionText(source){var box=document.createElement("div");box.appendChild(descriptionFragment(source));return(box.textContent||"").replace(/[\t\r\n ]+/g," ").trim();}
 function appendFullDescription(parent,source){parent.appendChild(descriptionFragment(source));}
 function displayCategory(name){return name==="Мисливські худі, пуловери, футболкі"?"Мисливські худі, пуловери, футболки":name}
 function price(p){var n=Number(p.price);return Number.isFinite(n)?n:Infinity;}
