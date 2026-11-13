@@ -74,6 +74,7 @@ jobs:
           node <<'NODE'
           (async () => {
             const fs = require("node:fs");
+            const crypto = require("node:crypto");
             const { execFileSync } = require("node:child_process");
             const base = "https://allacontactical-bot.allacontactical.workers.dev/internal/photo-pipeline";
             const headers = { "Authorization": "Bearer " + process.env.ACC_CONTENTS_TOKEN, "Content-Type": "application/json" };
@@ -131,7 +132,7 @@ jobs:
               images.forEach((source, imageIndex) => {
                 if (!source.includes("/product-images/") && !fileNames.has(source)) {
                   const idPart = String(item.product_id || item.id).replace(/[^a-z0-9]/gi, "").slice(-8) || String(item.id);
-                  fileNames.set(source, imageSlug(item.title) + "-" + idPart + "-" + (imageIndex + 1) + ".webp");
+                  fileNames.set(source, imageSlug(item.title) + "-" + idPart + "-" + (imageIndex + 1) + "-" + crypto.createHash("sha1").update(source).digest("hex").slice(0, 6) + ".webp");
                 }
               });
             }
