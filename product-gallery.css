@@ -1,0 +1,7 @@
+/* Shared product photo gallery: main image + thumbnail strip. */
+.product-image .product-photo-main{width:100%;height:100%;object-fit:contain;display:block}
+.product-photo-thumbs{display:flex;gap:6px;overflow-x:auto;padding:6px;background:#fff;scrollbar-width:thin}
+.product-photo-thumbs img{width:52px;height:52px;flex:0 0 auto;object-fit:cover;border:2px solid #d7dbd0;border-radius:4px;cursor:pointer;background:#fff}
+.product-photo-thumbs img.active{border-color:#f28c28}
+.product-photo-thumbs img:focus-visible{outline:2px solid #f28c28;outline-offset:1px}
+@media(max-width:480px){.product-photo-thumbs img{width:46px;height:46px}}
