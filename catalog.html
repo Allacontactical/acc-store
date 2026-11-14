@@ -201,7 +201,7 @@ card.appendChild(body);frag.appendChild(card);
 }
 
 var orderModal=document.getElementById("orderModal"),orderForm=document.getElementById("accOrderForm"),orderProduct=document.getElementById("orderProduct"),orderStatus=document.getElementById("orderStatus"),submitOrder=document.getElementById("submitOrder");
-var orderApiUrl="https://script.google.com/macros/s/AKfycbzpREyHQTp9WowdGBO7c6_FkoMvve0-WBpGOXDhYDvxT1UQLOVhmMdALMooxN4uaFEuIQ/exec";
+var orderApiUrl="https://allacontactical-bot.allacontactical.workers.dev/orders";
 function closeOrder(){orderModal.classList.remove("is-open");orderModal.setAttribute("aria-hidden","true");}
 function openOrder(product){orderForm.reset();orderProduct.value=product||"";orderStatus.textContent="";orderStatus.className="form-status";submitOrder.disabled=false;submitOrder.textContent="Надіслати заявку";orderModal.classList.add("is-open");orderModal.setAttribute("aria-hidden","false");var first=orderForm.querySelector('[name="name"]');if(first)first.focus();}
 grid.addEventListener("click",function(event){var button=event.target.closest("[data-order-product]");if(button)openOrder(button.getAttribute("data-order-product"));});
@@ -216,9 +216,11 @@ var formData=new FormData(orderForm),payload={};
 formData.forEach(function(value,key){payload[key]=String(value).trim();});
 if(!payload.name||!payload.phone||!payload.product||!payload.city){orderStatus.textContent="Заповніть усі обов’язкові поля.";orderStatus.className="form-status error";return;}
 submitOrder.disabled=true;submitOrder.textContent="Надсилаємо…";orderStatus.textContent="Надсилаємо заявку…";orderStatus.className="form-status";
-fetch(orderApiUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify(payload)})
-.then(function(){orderStatus.textContent="Заявку надіслано. Ми зв’яжемося з вами для підтвердження замовлення.";orderStatus.className="form-status success";orderForm.reset();submitOrder.textContent="Заявку надіслано";})
-.catch(function(){orderStatus.textContent="Не вдалося надіслати заявку. Спробуйте ще раз або напишіть нам у Telegram.";orderStatus.className="form-status error";submitOrder.disabled=false;submitOrder.textContent="Спробувати ще раз";});
+payload.details=[payload.size ? "Розмір: "+payload.size : "",payload.comment||""].filter(Boolean).join("; ");
+fetch(orderApiUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+.then(function(response){return response.json().then(function(data){if(!response.ok||!data.ok||!data.order_id)throw new Error("Order not confirmed");return data;});})
+.then(function(data){orderStatus.textContent="Заявку прийнято. Номер: "+data.order_id+". Ми зв’яжемося з вами для підтвердження замовлення.";orderStatus.className="form-status success";orderForm.reset();submitOrder.textContent="Заявку прийнято";})
+.catch(function(){orderStatus.textContent="Не вдалося підтвердити прийняття заявки. Спробуйте ще раз або зателефонуйте нам.";orderStatus.className="form-status error";submitOrder.disabled=false;submitOrder.textContent="Спробувати ще раз";});
 });
 
 var ACC_API="https://allacontactical-bot.allacontactical.workers.dev";
