@@ -1022,10 +1022,9 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
         article.setAttribute("data-availability-status", product.availability_status || "");
         article.setAttribute("data-expected-arrival", product.expected_arrival || "");
 
-        var imageLink = document.createElement("a");
-        imageLink.href = "https://t.me/Allacontactical_bot";
-        imageLink.target = "_blank";
-        imageLink.rel = "noopener";
+        var imageLink = document.createElement("div");
+        // Product photos and gallery thumbnails stay on the storefront.
+        // Telegram is only opened by the explicit consultation link.
 
         var imageWrap = document.createElement("div");
         imageWrap.className = "product-image";
