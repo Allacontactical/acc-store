@@ -1,0 +1,2 @@
+ACC photo publication authorized 2026-11-14.
+Run full 281-item photo pipeline with WRITE_CATALOG=true and SAVE_D1=true.
