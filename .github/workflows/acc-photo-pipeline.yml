@@ -12,12 +12,12 @@ on:
       write_catalog:
         description: "Update published product cards after successful R2 upload"
         required: true
-        default: false
+        default: true
         type: boolean
       save_d1:
         description: "Explicitly save processed photo URLs to the staging D1 import batch"
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
