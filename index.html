@@ -1126,7 +1126,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
           return response.json();
         })
         .then(function (data) {
-          var allProducts = Array.isArray(data) ? data : [];
+          var allProducts = Array.isArray(data) ? data.filter(function (product) { return product.hidden !== true; }) : [];
           window.accProducts = allProducts;
           var featured = featuredIds.map(function (id) {
             return allProducts.find(function (product) { return String(product.id) === id; });
@@ -1145,7 +1145,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
           var fragment = document.createDocumentFragment();
           featured.forEach(function (product) { fragment.appendChild(makeCard(product)); });
           grid.appendChild(fragment);
-          count.textContent = "12 позицій у вітрині · Повний асортимент доступний у категоріях";
+          count.textContent = "Товарів у вітрині: " + featured.length + " · Повний асортимент доступний у категоріях";
         })
         .catch(function () {
           grid.textContent = "";
