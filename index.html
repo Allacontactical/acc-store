@@ -676,8 +676,8 @@
         <button type="submit" aria-label="Шукати">⌕</button>
       </form>
       <div class="header-tools">
-        <a class="header-tool" href="./account.html" aria-label="Особистий кабінет"><span aria-hidden="true">♙</span><small>Кабінет</small></a>
-        <button class="header-tool" id="favoritesToggle" type="button" aria-label="Показати обране"><span aria-hidden="true">♡</span><small>Обране <b id="favoritesCount">0</b></small></button>
+        <a class="header-tool" href="./account.html" aria-label="Особистий кабінет"><small>Кабінет</small></a>
+        <button class="header-tool" id="favoritesToggle" type="button" aria-label="Показати обране"><small>Обране <b id="favoritesCount">0</b></small></button>
         <button class="header-tool" id="cartToggle" type="button" aria-label="Відкрити кошик"><span aria-hidden="true">▢</span><small>Кошик <b id="cartCount">0</b></small></button>
         <div class="language-switcher" role="group" aria-label="Оберіть мову сайту">
           <button type="button" data-language="uk" aria-pressed="true" title="Українська">UA</button>
@@ -1105,7 +1105,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
         tools.className = "product-card-actions";
         var favorite = document.createElement("button");
         favorite.type = "button";
-        favorite.textContent = "♡ Обране";
+        favorite.textContent = "Обране";
         favorite.setAttribute("data-favorite-id", String(product.id));
         favorite.setAttribute("aria-pressed", "false");
         var add = document.createElement("button");
@@ -1181,7 +1181,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
       document.getElementById("cartClose").addEventListener("click",function(){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");});
       cartModal.addEventListener("click",function(e){if(e.target===cartModal){cartModal.classList.remove("is-open");cartModal.setAttribute("aria-hidden","true");}});
       document.getElementById("favoritesToggle").addEventListener("click",function(){var only=favorites.length>0&&grid.getAttribute("data-favorites-only")!=="true";grid.setAttribute("data-favorites-only",only?"true":"false");Array.prototype.forEach.call(grid.querySelectorAll(".card"),function(card){var el=card.querySelector("[data-favorite-id]");if(el){var id=el.getAttribute("data-favorite-id");card.hidden=only&&favorites.indexOf(id)===-1;}});this.setAttribute("aria-pressed",only?"true":"false");});
-      grid.addEventListener("click",function(e){var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"♥ Обране":"♡ Обране";save();counters();}if(c){cart.push(c.getAttribute("data-cart-id"));persist();c.classList.add("is-active");c.textContent="✓ Додано";counters();}});
+      grid.addEventListener("click",function(e){var f=e.target.closest("[data-favorite-id]"),c=e.target.closest("[data-cart-id]");if(f){var id=f.getAttribute("data-favorite-id"),i=favorites.indexOf(id);if(i<0)favorites.push(id);else favorites.splice(i,1);f.classList.toggle("is-active",i<0);f.setAttribute("aria-pressed",i<0?"true":"false");f.textContent=i<0?"В обраному":"Обране";save();counters();}if(c){cart.push(c.getAttribute("data-cart-id"));persist();c.classList.add("is-active");c.textContent="Додано";counters();}});
       counters();
       var token=localStorage.getItem(KEY);
       if(token){fetch(API+"/account/cart",{headers:{Authorization:"Bearer "+token},cache:"no-store"}).then(function(r){if(!r.ok)throw new Error();return r.json()}).then(function(d){var remote=d.cart||{},flat=[];Object.keys(remote).forEach(function(id){for(var i=0;i<Math.min(99,Number(remote[id])||0);i++)flat.push(id)});if(flat.length){cart=flat;save();counters();}}).catch(function(){});}
