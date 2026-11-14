@@ -305,6 +305,84 @@ function isSafe281ImportBatch(batch, itemCount) {
     batch.status === "ready");
 }
 
+const CATALOG_CONTENTS_URL = "https://api.github.com/repos/Allacontactical/acc-store/contents/products.json";
+
+function catalogGitHubHeaders(env) {
+  return {
+    Accept: "application/vnd.github+json",
+    Authorization: "Bearer " + env.ACC_CONTENTS_TOKEN,
+    "User-Agent": "AllaconTactical-ACC-Catalog-Publisher",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+}
+
+async function readCatalogForAdmin(headers) {
+  const response = await fetch(CATALOG_CONTENTS_URL + "?ref=main", {
+    headers: { ...headers, Accept: "application/vnd.github.object+json" },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error("Не удалось прочитать каталог GitHub (HTTP " + response.status + ")");
+  const { sha } = await response.json();
+  if (!/^[a-f0-9]{40}$/.test(sha || "")) throw new Error("GitHub не вернул версию каталога");
+
+  // A blob URL pins the raw contents to the same SHA used by the update.
+  const blobUrl = "https://api.github.com/repos/Allacontactical/acc-store/git/blobs/" + sha;
+  const blob = await fetch(blobUrl, { headers: { ...headers, Accept: "application/vnd.github.raw+json" } });
+  if (!blob.ok) throw new Error("Не удалось загрузить каталог GitHub (HTTP " + blob.status + ")");
+  const products = await blob.json();
+  if (!Array.isArray(products)) throw new Error("Формат каталога GitHub изменился");
+  return { sha, products };
+}
+
+async function handleCatalogVisibility(request, env) {
+  if (!env.ACC_CONTENTS_TOKEN) return json({ error: "Не настроен доступ к каталогу GitHub" }, 503);
+  const headers = catalogGitHubHeaders(env);
+  try {
+    if (request.method === "GET") {
+      const { products } = await readCatalogForAdmin(headers);
+      return json({ products: products.map(product => ({
+        id: String(product.id), title: product.title, category: product.category, hidden: product.hidden === true
+      })) });
+    }
+
+    const payload = await request.json().catch(() => null);
+    const { id, hidden } = payload || {};
+    if (typeof id !== "string" || !/^[0-9]{1,20}$/.test(id) || typeof hidden !== "boolean") {
+      return json({ error: "Некорректный товар или действие" }, 400);
+    }
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { sha, products } = await readCatalogForAdmin(headers);
+      const matches = products.filter(product => String(product.id) === id);
+      if (!matches.length) return json({ error: "Товар не найден в каталоге ACC" }, 404);
+      if (matches.length > 1) return json({ error: "В каталоге есть несколько товаров с этим ID" }, 409);
+      const [product] = matches;
+      if ((product.hidden === true) === hidden) return json({ id, hidden });
+
+      if (hidden) product.hidden = true;
+      else delete product.hidden;
+      const bytes = new TextEncoder().encode(JSON.stringify(products, null, 2) + "\n");
+      const chunks = [];
+      for (let offset = 0; offset < bytes.length; offset += 16384) {
+        chunks.push(String.fromCharCode(...bytes.subarray(offset, offset + 16384)));
+      }
+      const response = await fetch(CATALOG_CONTENTS_URL, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          branch: "main", sha, content: btoa(chunks.join("")),
+          message: (hidden ? "Hide ACC product " : "Restore ACC product ") + id
+        })
+      });
+      if (response.ok) return json({ id, hidden });
+      if (response.status !== 409) throw new Error("GitHub отклонил изменение каталога (HTTP " + response.status + ")");
+    }
+    return json({ error: "Каталог одновременно обновляется. Повторите действие." }, 409);
+  } catch (error) {
+    return json({ error: String(error.message || error).slice(0, 240) }, 502);
+  }
+}
+
 async function handleAdmin(request, env, url) {
   const user = await adminUser(request, env);
   if (!user) return json({ error: "Forbidden" }, 403);
@@ -353,6 +431,9 @@ async function handleAdmin(request, env, url) {
     });
   }
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
+  if (url.pathname === "/admin/catalog/visibility" && ["GET", "PUT"].includes(request.method)) {
+    return handleCatalogVisibility(request, env);
+  }
 
 
   if (url.pathname === "/admin/import/batch/approve" && request.method === "POST") {
