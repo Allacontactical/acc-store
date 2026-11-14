@@ -679,9 +679,14 @@ async function handleCustomerOrder(request, env) {
     return json({ error: "Invalid order fields" }, 400);
   }
   const id = randomToken(12);
+  let orderNumber;
   try {
-    await env.DB.prepare("INSERT INTO customer_orders (id, name, phone, product, city, details) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(id, fields.name, fields.phone, fields.product, fields.city, fields.details).run();
+    const [, receipt] = await env.DB.batch([
+      env.DB.prepare("INSERT INTO customer_orders (id, name, phone, product, city, details) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(id, fields.name, fields.phone, fields.product, fields.city, fields.details),
+      env.DB.prepare("INSERT INTO customer_order_numbers (order_id) VALUES (?) RETURNING number").bind(id)
+    ]);
+    orderNumber = "ACC-" + String(receipt.results[0].number).padStart(5, "0");
   } catch (error) {
     console.error("Customer order persistence failed", error);
     return json({ error: "Order storage unavailable" }, 503);
@@ -690,12 +695,12 @@ async function handleCustomerOrder(request, env) {
   if (env.TELEGRAM_BOT_TOKEN && env.ADMIN_TELEGRAM_ID) {
     try {
       await telegramSend(env, env.ADMIN_TELEGRAM_ID,
-        "Нове замовлення ACC #" + id + "\\nТовар: " + fields.product +
+        "Нове замовлення № " + orderNumber + "\\nТовар: " + fields.product +
         "\\nІм'я: " + fields.name + "\\nТелефон: " + fields.phone +
         "\\nМісто: " + fields.city + (fields.details ? "\\nДеталі: " + fields.details : ""));
     } catch (error) { console.error("Order notification failed", error); }
   }
-  return json({ ok: true, order_id: id }, 201);
+  return json({ ok: true, order_id: id, order_number: orderNumber }, 201);
 }
 
 export default {
