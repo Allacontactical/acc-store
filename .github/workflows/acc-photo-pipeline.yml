@@ -2,6 +2,10 @@
 name: ACC photo pipeline
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/acc-photo-publish-trigger.txt'
   workflow_dispatch:
     inputs:
       max_products:
@@ -77,8 +81,8 @@ jobs:
           ACC_CONTENTS_TOKEN: ${{ secrets.ACC_CONTENTS_TOKEN }}
           BATCH_ID: ${{ steps.inventory.outputs.batch_id }}
           MAX_PRODUCTS: ${{ inputs.max_products || '0' }}
-          WRITE_CATALOG: ${{ inputs.write_catalog || 'false' }}
-          SAVE_D1: ${{ inputs.save_d1 || 'false' }}
+          WRITE_CATALOG: ${{ github.event_name == 'push' && 'true' || inputs.write_catalog || 'false' }}
+          SAVE_D1: ${{ github.event_name == 'push' && 'true' || inputs.save_d1 || 'false' }}
         run: |
           node <<'NODE'
           (async () => {
