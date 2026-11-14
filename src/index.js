@@ -665,10 +665,44 @@ async function handleWebhook(request, env) {
   return new Response("OK");
 }
 
+async function handleCustomerOrder(request, env) {
+  if (!env.DB) return json({ error: "Order storage unavailable" }, 503);
+  let data;
+  try { data = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const fields = {};
+  for (const key of ["name", "phone", "product", "city", "details"]) {
+    fields[key] = typeof data?.[key] === "string" ? data[key].trim() : "";
+  }
+  if (!fields.name || fields.name.length > 120 || !fields.phone || fields.phone.length > 40 ||
+      !/^[+0-9() .-]{7,40}$/.test(fields.phone) || !fields.product || fields.product.length > 400 ||
+      !fields.city || fields.city.length > 200 || fields.details.length > 1500) {
+    return json({ error: "Invalid order fields" }, 400);
+  }
+  const id = randomToken(12);
+  try {
+    await env.DB.prepare("INSERT INTO customer_orders (id, name, phone, product, city, details) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(id, fields.name, fields.phone, fields.product, fields.city, fields.details).run();
+  } catch (error) {
+    console.error("Customer order persistence failed", error);
+    return json({ error: "Order storage unavailable" }, 503);
+  }
+  // Storage is the source of truth; Telegram notification is best effort.
+  if (env.TELEGRAM_BOT_TOKEN && env.ADMIN_TELEGRAM_ID) {
+    try {
+      await telegramSend(env, env.ADMIN_TELEGRAM_ID,
+        "Нове замовлення ACC #" + id + "\\nТовар: " + fields.product +
+        "\\nІм'я: " + fields.name + "\\nТелефон: " + fields.phone +
+        "\\nМісто: " + fields.city + (fields.details ? "\\nДеталі: " + fields.details : ""));
+    } catch (error) { console.error("Order notification failed", error); }
+  }
+  return json({ ok: true, order_id: id }, 201);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/webhook" && request.method === "POST") return handleWebhook(request, env);
+    if (url.pathname === "/orders" && request.method === "POST") return withCors(await handleCustomerOrder(request, env), request);
 
     const cors = corsHeaders(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
