@@ -334,6 +334,56 @@ async function readCatalogForAdmin(headers) {
   return { sha, products };
 }
 
+async function handleCatalogProduct(request, env, url) {
+ if (!env.ACC_CONTENTS_TOKEN) return json({error:"Не настроен доступ к каталогу GitHub"},503);
+ const headers = catalogGitHubHeaders(env);
+ try {
+  if (request.method === "GET") {
+   const id = url.searchParams.get("id") || "";
+   if (!/^[0-9]{1,20}$/.test(id)) return json({error:"Некорректный ID"},400);
+   const {sha,products} = await readCatalogForAdmin(headers);
+   const matches = products.filter(p => String(p.id) === id);
+   if (matches.length !== 1) return json({error:matches.length?"Повторяющийся ID":"Товар не найден"},matches.length?409:404);
+   return json({sha,product:matches[0]});
+  }
+  const payload = await request.json().catch(()=>null);
+  const id = payload?.id;
+  if (typeof id !== "string" || !/^[0-9]{1,20}$/.test(id) || !/^[a-f0-9]{40}$/.test(payload?.sha||"")) return json({error:"Некорректный ID или версия"},400);
+  const textFields = {title:500,brand:120,category:160,description:12000,quantity:40,expected_arrival:100};
+  for (const [field,max] of Object.entries(textFields)) {
+   if (typeof payload[field] !== "string" || payload[field].length > max) return json({error:"Некорректное поле "+field},400);
+  }
+  if (!payload.title.trim() || !payload.category.trim()) return json({error:"Название и категория обязательны"},400);
+  const price = Number(payload.price);
+  if (payload.price === "" || !Number.isFinite(price) || price < 0 || price > 100000000) return json({error:"Некорректная цена"},400);
+  if (!["","in_stock","expected","preorder","out_of_stock"].includes(payload.availability_status)) return json({error:"Некорректный статус наличия"},400);
+  if (typeof payload.images_changed !== "boolean") return json({error:"Некорректное состояние фото"},400);
+  if (!Array.isArray(payload.images) || payload.images.length > 30 || payload.images.some(x => typeof x !== "string" || x.length > 2000 || !/^https:\/\//.test(x))) return json({error:"Некорректные ссылки на фото"},400);
+  const {sha,products} = await readCatalogForAdmin(headers);
+  if (sha !== payload.sha) return json({error:"Каталог изменился после открытия карточки. Обновите товар и повторите редактирование."},409);
+  const matches = products.filter(p=>String(p.id)===id);
+  if (matches.length !== 1) return json({error:"Товар не найден или ID повторяется"},409);
+  const product=matches[0];
+  for (const field of ["title","brand","category","description","quantity","expected_arrival"]) product[field]=payload[field];
+  product.price=price;
+  product.availability_status=payload.availability_status;
+  if (payload.images_changed === true) {
+   product.images=payload.images;
+   if (payload.images.length) product.image=payload.images[0];
+   else delete product.image;
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify(products,null,2)+"\n");
+  const chunks=[];
+  for(let offset=0;offset<bytes.length;offset+=16384) chunks.push(String.fromCharCode(...bytes.subarray(offset,offset+16384)));
+  const response=await fetch(CATALOG_CONTENTS_URL,{method:"PUT",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({
+   branch:"main",sha,content:btoa(chunks.join("")),message:"Edit ACC catalog product "+id
+  })});
+  if(response.status===409) return json({error:"Каталог изменился одновременно. Обновите карточку."},409);
+  if(!response.ok) return json({error:"GitHub отклонил сохранение (HTTP "+response.status+")"},502);
+  return json({ok:true,id});
+ } catch(error) {return json({error:String(error.message||error).slice(0,240)},502);}
+}
+
 async function handleCatalogVisibility(request, env) {
   if (!env.ACC_CONTENTS_TOKEN) return json({ error: "Не настроен доступ к каталогу GitHub" }, 503);
   const headers = catalogGitHubHeaders(env);
@@ -431,6 +481,7 @@ async function handleAdmin(request, env, url) {
     });
   }
   if (url.pathname === "/admin/me" && request.method === "GET") return json({ admin: true, telegram_user_id: user.telegram_user_id });
+  if (url.pathname === "/admin/catalog/product" && ["GET", "PUT"].includes(request.method)) return handleCatalogProduct(request, env, url);
   if (url.pathname === "/admin/catalog/visibility" && ["GET", "PUT"].includes(request.method)) {
     return handleCatalogVisibility(request, env);
   }
