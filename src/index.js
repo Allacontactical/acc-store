@@ -357,6 +357,7 @@ async function handleCatalogProduct(request, env, url) {
   const price = Number(payload.price);
   if (payload.price === "" || !Number.isFinite(price) || price < 0 || price > 100000000) return json({error:"Некорректная цена"},400);
   if (!["","in_stock","expected","preorder","out_of_stock"].includes(payload.availability_status)) return json({error:"Некорректный статус наличия"},400);
+  if (typeof payload.images_changed !== "boolean") return json({error:"Некорректное состояние фото"},400);
   if (!Array.isArray(payload.images) || payload.images.length > 30 || payload.images.some(x => typeof x !== "string" || x.length > 2000 || !/^https:\/\//.test(x))) return json({error:"Некорректные ссылки на фото"},400);
   const {sha,products} = await readCatalogForAdmin(headers);
   if (sha !== payload.sha) return json({error:"Каталог изменился после открытия карточки. Обновите товар и повторите редактирование."},409);
@@ -366,9 +367,11 @@ async function handleCatalogProduct(request, env, url) {
   for (const field of ["title","brand","category","description","quantity","expected_arrival"]) product[field]=payload[field];
   product.price=price;
   product.availability_status=payload.availability_status;
-  product.images=payload.images;
-  if (payload.images.length) product.image=payload.images[0];
-  else delete product.image;
+  if (payload.images_changed === true) {
+   product.images=payload.images;
+   if (payload.images.length) product.image=payload.images[0];
+   else delete product.image;
+  }
   const bytes = new TextEncoder().encode(JSON.stringify(products,null,2)+"\n");
   const chunks=[];
   for(let offset=0;offset<bytes.length;offset+=16384) chunks.push(String.fromCharCode(...bytes.subarray(offset,offset+16384)));
