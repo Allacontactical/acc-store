@@ -141,9 +141,9 @@ function msg(id,text){$(id).textContent=text;}
 async function api(path,options={}){const headers=Object.assign({},options.headers||{},{Authorization:"Bearer "+token});const r=await fetch(API+path,Object.assign({},options,{headers,cache:"no-store"}));let data={};try{data=await r.json()}catch(_){}if(!r.ok){const parts=[data.error,data.detail,data.message].filter(Boolean);if(data.github_status)parts.push("GitHub API HTTP "+data.github_status);if(data.accepted_permissions)parts.push("accepted_permissions="+data.accepted_permissions);if(data.request_id)parts.push("request_id="+data.request_id);throw new Error(parts.join("; ")||("HTTP "+r.status));}return data;}
 const catalogVisibilityPath = "/admin/catalog/visibility";
 const catalogEditPath = "/admin/catalog/product";
-let catalogEditingId = "", catalogEditingSha = "";
+let catalogEditingId = "", catalogEditingSha = "", catalogOriginalImages = [];
 function catalogPhotoUrls(p) {
- if (Array.isArray(p.images)) return p.images.map(v => typeof v === "string" ? v : v && v.url || "").filter(Boolean);
+ if (Array.isArray(p.images)) return p.images.map(v => typeof v === "string" ? v : v && (v.url || v.src) || "").filter(Boolean);
  return p.image ? [p.image] : [];
 }
 async function openCatalogEditor(id) {
@@ -153,6 +153,7 @@ async function openCatalogEditor(id) {
   const p = data.product;
   catalogEditingId = String(p.id);
   catalogEditingSha = data.sha;
+  catalogOriginalImages = catalogPhotoUrls(p);
   $("catalogEditId").textContent = "ID " + catalogEditingId;
   for (const [key, value] of Object.entries({Title:p.title, Brand:p.brand, Category:p.category, Description:p.description, Price:p.price, Quantity:p.quantity, Availability:p.availability_status, Arrival:p.expected_arrival})) {
    $("catalogEdit" + key).value = value == null ? "" : String(value);
@@ -174,7 +175,7 @@ $("catalogEditForm").onsubmit = async e => {
   brand:$("catalogEditBrand").value.trim(), category:$("catalogEditCategory").value.trim(),
   description:$("catalogEditDescription").value, price:$("catalogEditPrice").value,
   quantity:$("catalogEditQuantity").value.trim(), availability_status:$("catalogEditAvailability").value,
-  expected_arrival:$("catalogEditArrival").value.trim(), images};
+  expected_arrival:$("catalogEditArrival").value.trim(), images, images_changed:JSON.stringify(images)!==JSON.stringify(catalogOriginalImages)};
  try {
   if (!confirm("Сохранить изменения товара ID " + catalogEditingId + " в каталоге ACC?")) return;
   await api(catalogEditPath,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
