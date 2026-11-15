@@ -194,13 +194,13 @@
   function money(value){const n=Number(value);return Number.isFinite(n)&&n>0?new Intl.NumberFormat("uk-UA",{maximumFractionDigits:0}).format(n)+" грн":"Ціну уточнюйте";}
   function renderCabinetCart(){
     const cart=readCabinetCart(), box=$("cabinetCartItems"); box.textContent="";
-    const entries=Object.entries(cart).filter(([id,qty])=>Number(qty)>0&&cabinetProducts.some(p=>String(p.id)===id));
+    const entries=Object.entries(cart).filter(([id,qty])=>Number(qty)>0&&cabinetProducts.some(p=>String(p.id)===id.split("~")[0]));
     const count=entries.reduce((sum,[,qty])=>sum+Number(qty),0); $("cabinetCartCount").textContent="("+count+")";
     let total=0;
     if(!entries.length){const p=document.createElement("p");p.className="hint";p.textContent="Кошик поки порожній.";box.appendChild(p);}
     entries.forEach(([id,qty])=>{
-      const product=cabinetProducts.find(p=>String(p.id)===id),row=document.createElement("div");row.className="cart-row";
-      const name=document.createElement("span");name.textContent=product.title+" × "+qty;
+      const product=cabinetProducts.find(p=>String(p.id)===id.split("~")[0]),row=document.createElement("div");row.className="cart-row";
+      const name=document.createElement("span");name.textContent=product.title+(id.includes("~")?" · Розмір "+id.split("~")[1]:"")+" × "+qty;
       const price=document.createElement("strong");const amount=Number(product.price);
       if(Number.isFinite(amount)&&amount>0){total+=amount*Number(qty);price.textContent=money(amount*Number(qty));}else price.textContent="Ціну уточнюйте";
       const controls=document.createElement("div");controls.className="cart-row-controls";
@@ -213,7 +213,7 @@
       controls.append(minus,plus,remove);row.append(name,price,controls);box.appendChild(row);
     });
     $("cabinetCartTotal").textContent=money(total);
-    const message="Вітаю! Хочу уточнити наявність і замовити:\n"+entries.map(([id,qty])=>{const p=cabinetProducts.find(x=>String(x.id)===id);return p?p.title+" — "+qty+" шт.":"";}).filter(Boolean).join("\n");
+    const message="Вітаю! Хочу уточнити наявність і замовити:\n"+entries.map(([id,qty])=>{const p=cabinetProducts.find(x=>String(x.id)===id.split("~")[0]);return p?p.title+(id.includes("~")?" · розмір "+id.split("~")[1]:"")+" — "+qty+" шт.":"";}).filter(Boolean).join("\n");
     $("cabinetCheckout").href=entries.length?"https://t.me/Allacontactical_bot?text="+encodeURIComponent(message):"https://t.me/Allacontactical_bot";
   }
   function renderCabinetCatalog(){
