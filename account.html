@@ -185,7 +185,7 @@
     let guest = [];
     try { guest = JSON.parse(localStorage.getItem("accCart") || "[]"); } catch (_) { guest = []; }
     if (Array.isArray(guest) && guest.length) {
-      guest.forEach(id => { const key = String(id); if (/^\\d{1,20}$/.test(key)) cabinetCart[key] = Math.min(99, (Number(cabinetCart[key]) || 0) + 1); });
+      guest.forEach(id => { const key = String(id); if (/^\\d{1,20}(?:~[A-Za-z0-9._-]{1,24})?$/.test(key)) cabinetCart[key] = Math.min(99, (Number(cabinetCart[key]) || 0) + 1); });
       localStorage.removeItem("accCart");
       await api("/account/cart", { method: "PUT", body: JSON.stringify({ cart: cabinetCart }) });
     }
