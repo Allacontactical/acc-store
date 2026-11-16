@@ -219,7 +219,7 @@ submitOrder.disabled=true;submitOrder.textContent="Надсилаємо…";orde
 payload.details=[payload.size ? "Розмір: "+payload.size : "",payload.comment||""].filter(Boolean).join("; ");
 fetch(orderApiUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
 .then(function(response){return response.json().then(function(data){if(!response.ok||!data.ok||!data.order_id)throw new Error("Order not confirmed");return data;});})
-.then(function(data){orderStatus.textContent="Заявку прийнято. Номер: "+data.order_id+". Ми зв’яжемося з вами для підтвердження замовлення.";orderStatus.className="form-status success";orderForm.reset();submitOrder.textContent="Заявку прийнято";})
+.then(function(data){orderStatus.textContent="Заявку № "+(data.order_number||data.order_id)+" прийнято. Ми зв’яжемося з вами, щоб підтвердити замовлення.";orderStatus.className="form-status success";orderForm.reset();submitOrder.textContent="Заявку прийнято";})
 .catch(function(){orderStatus.textContent="Не вдалося підтвердити прийняття заявки. Спробуйте ще раз або зателефонуйте нам.";orderStatus.className="form-status error";submitOrder.disabled=false;submitOrder.textContent="Спробувати ще раз";});
 });
 
