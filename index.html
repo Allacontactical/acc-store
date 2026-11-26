@@ -750,7 +750,7 @@
         <p id="catalogCount" class="price-note">Добірка товарів AllaconTactical</p>
         <div class="actions">
           <a class="btn" href="#categories">Переглянути товари за категоріями</a>
-          <a class="btn secondary" href="https://allacontactical.prom.ua/" target="_blank" rel="noopener">Увесь каталог на Prom.ua</a>
+          <a class="btn secondary" href="./catalog.html">Увесь каталог ACC</a>
         </div>
         <p class="price-note">Актуальні ціни, розміри та наявність уточнюйте на сторінці товару.</p>
       </div>
@@ -910,7 +910,7 @@
       </div>
      
 <div>
-  <a href="https://allacontactical.prom.ua/">Каталог магазину</a><br>
+  <a href="./catalog.html">Каталог магазину</a><br>
   <a href="mailto:Allacontactical@gmail.com">Allacontactical@gmail.com</a><br>
   © 2026 AllaconTactical
 </div>
@@ -1102,13 +1102,7 @@ var result=document.createDocumentFragment();copyChildren(parsed.body,result);re
         buy.textContent = "Отримати консультацію фахівця";
         body.appendChild(buy);
 
-        var prom = document.createElement("a");
-        prom.className = "link";
-        prom.href = product.url || "https://allacontactical.prom.ua/";
-        prom.target = "_blank";
-        prom.rel = "noopener";
-        prom.textContent = "Також доступно на Prom.ua →";
-        body.appendChild(prom);
+        
 
         var tools = document.createElement("div");
         tools.className = "product-card-actions";
