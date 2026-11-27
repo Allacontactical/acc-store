@@ -144,7 +144,7 @@ async function handleAccount(request, env, url) {
     if (entries.length > 100) return json({ error: "Cart contains too many products" }, 400);
     const cart = {};
     for (const [productId, quantity] of entries) {
-      if (!/^\d{1,20}$/.test(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      if (!/^\d{1,20}(?:~[A-Za-z0-9._-]{1,24})?$/.test(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
         return json({ error: "Invalid cart item" }, 400);
       }
       cart[productId] = quantity;
